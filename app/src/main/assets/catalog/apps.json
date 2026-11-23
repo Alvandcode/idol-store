@@ -1,0 +1,32 @@
+{
+  "updatedAt": "2024-11-23",
+  "admins": ["Alvandcode"],
+  "categories": ["ابزارها", "رسانه", "امنیت و حریم خصوصی", "بازی", "توسعه"],
+  "apps": [
+    {
+      "id": "com.idol.store",
+      "name": "Idol Store",
+      "developer": "Idol",
+      "category": "ابزارها",
+      "description": "استور شخصی اپلیکیشن‌ها؛ آخرین ریلیز پایدار از گیت‌هاب گرفته و APK یونیورسال آن برای دانلود گذاشته می‌شود.",
+      "iconUrl": "https://raw.githubusercontent.com/USERNAME/idol-store-catalog/main/icons/idol-store.png",
+      "packageName": "com.idol.store",
+      "github": "https://github.com/USERNAME/idol-store",
+      "website": "https://example.com",
+      "email": "admin@example.com",
+      "telegram": "https://t.me/idolstore"
+    },
+    {
+      "id": "org.schabi.newpipe",
+      "name": "NewPipe",
+      "developer": "TeamNewPipe",
+      "category": "رسانه",
+      "description": "رابط سبک و متن‌باز یوتیوب (نمونه واقعی — آخرین ریلیز پایدار از گیت‌هاب گرفته می‌شود).",
+      "iconUrl": "https://raw.githubusercontent.com/TeamNewPipe/NewPipe/dev/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "packageName": "org.schabi.newpipe",
+      "github": "TeamNewPipe/NewPipe",
+      "website": "https://newpipe.net",
+      "telegram": "https://t.me/newpipe"
+    }
+  ]
+}
