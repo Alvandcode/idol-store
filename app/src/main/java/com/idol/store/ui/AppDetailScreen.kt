@@ -34,6 +34,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
@@ -61,7 +62,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.idol.store.data.AppContentState
 import com.idol.store.data.DownloadState
 import com.idol.store.data.GhRelease
 import com.idol.store.data.GhAsset
@@ -72,6 +72,7 @@ import com.idol.store.data.downloadKey
 import com.idol.store.data.humanSize
 import com.idol.store.data.shortDate
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
     val states by vm.downloadStates.collectAsState()

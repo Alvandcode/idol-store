@@ -54,7 +54,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.idol.store.data.AppContentState
 import com.idol.store.data.DownloadState
 import com.idol.store.data.downloadKey
 

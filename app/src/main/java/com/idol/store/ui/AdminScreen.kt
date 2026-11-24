@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.idol.store.data.GitHubService
 import com.idol.store.data.StoreApp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -227,7 +228,12 @@ private fun AdminList(vm: AdminViewModel) {
 }
 
 @Composable
-private fun AdminTextField(label: String, value: String, onChange: (String) -> Unit, required: Boolean = false) {
+private fun AdminTextField(
+    label: String,
+    value: String,
+    onChange: (String) -> Unit,
+    required: Boolean = false,
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
