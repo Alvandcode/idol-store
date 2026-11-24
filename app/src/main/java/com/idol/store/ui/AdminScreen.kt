@@ -232,7 +232,6 @@ private fun AdminTextField(
     label: String,
     value: String,
     onChange: (String) -> Unit,
-    required: Boolean = false,
 ) {
     OutlinedTextField(
         value = value,
@@ -271,8 +270,8 @@ private fun AppForm(vm: AdminViewModel) {
         )
         Spacer(Modifier.height(12.dp))
 
-        AdminTextField("شناسه یکتا (id)", id) { id = it }
-        AdminTextField("نام نمایشی", name) { name = it }
+        AdminTextField("شناسه یکتا (id) *", id) { id = it }
+        AdminTextField("نام نمایشی *", name) { name = it }
         AdminTextField("توسعه‌دهنده", developer) { developer = it }
         AdminTextField("دسته", category) { category = it }
         OutlinedTextField(
@@ -283,7 +282,7 @@ private fun AppForm(vm: AdminViewModel) {
         )
         AdminTextField("آدرس آیکون (URL)", iconUrl) { iconUrl = it }
         AdminTextField("نام پکیج (برای تشخیص نصب)", packageName) { packageName = it }
-        AdminTextField("ریپو/صفحه ریلیز گیت‌هاب", github) { github = it }
+        AdminTextField("ریپو/صفحه ریلیز گیت‌هاب *", github) { github = it }
         AdminTextField("وب‌سایت سازنده (اختیاری)", website) { website = it }
         AdminTextField("ایمیل سازنده (اختیاری)", email) { email = it }
         AdminTextField("لینک کانال تلگرام (اختیاری)", telegram) { telegram = it }
