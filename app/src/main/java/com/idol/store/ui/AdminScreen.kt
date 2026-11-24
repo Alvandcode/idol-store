@@ -236,7 +236,7 @@ private fun AdminTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
-        label = { Text(if (required) "$label *" else label) },
+        label = { Text(label) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
     )
