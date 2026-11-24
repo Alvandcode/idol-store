@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Idol Store</string>
+
+    <string name="refresh">Refresh</string>
+    <string name="logout">Log out</string>
+    <string name="logout_account">Log out</string>
+    <string name="admin_panel">Admin panel</string>
+    <string name="retry">Retry</string>
+    <string name="back">Back</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="cancel_download">Cancel</string>
+    <string name="install">Install</string>
+    <string name="download">Download</string>
+    <string name="progress_fmt">%1$d%%</string>
+    <string name="installed">Installed</string>
+    <string name="installed_version_fmt">Installed version: %1$d</string>
+    <string name="version_fmt">v%1$s</string>
+    <string name="fetching">Fetching…</string>
+    <string name="error_loading">Failed to load data</string>
+    <string name="nothing_found">Nothing found</string>
+    <string name="no_apps">No apps found</string>
+    <string name="search_hint">Search apps…</string>
+    <string name="search_clear">Clear</string>
+    <string name="search_empty_prompt">Type something to search…</string>
+
+    <string name="tab_store">Store</string>
+    <string name="tab_search">Search</string>
+    <string name="tab_categories">Categories</string>
+    <string name="tab_you">You</string>
+
+    <string name="all_chip">All</string>
+    <string name="recent_updates">Recent updates</string>
+    <string name="other_apps">Other apps</string>
+    <string name="view_all">View all</string>
+    <string name="categories_title">Categories</string>
+    <string name="no_categories_yet">No categories yet — you can create them from the admin panel</string>
+    <string name="apps_count_fmt">%1$d apps</string>
+    <string name="category_empty">No apps in this category</string>
+    <string name="list_empty">No apps</string>
+
+    <string name="you_github_account">GitHub account</string>
+    <string name="you_stats_fmt">%1$d apps in store • %2$d installed</string>
+    <string name="you_installed_title">Installed on device</string>
+    <string name="you_no_installed">You haven\'t installed anything yet.</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_language">App language</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_system">System</string>
+    <string name="lang_fa">فارسی</string>
+    <string name="lang_en">English</string>
+
+    <string name="detail_description">Description</string>
+    <string name="detail_desc_none">No description provided.</string>
+    <string name="detail_contact_title">Contact the developer</string>
+    <string name="contact_website">Website</string>
+    <string name="contact_email">Email</string>
+    <string name="contact_github">GitHub</string>
+    <string name="contact_telegram">Telegram</string>
+    <string name="detail_latest_stable">Latest stable release</string>
+    <string name="detail_older_releases">Older releases</string>
+    <string name="release_meta_fmt">%1$s  •  %2$s  •  %3$s</string>
+    <string name="release_page">Release page</string>
+    <string name="notif_toggle_title">Update notifications</string>
+    <string name="notif_toggle_subtitle">We\'ll notify you when a new version is released</string>
+    <string name="star">Star</string>
+    <string name="allow_install_toast">Please allow installs from this source first</string>
+    <string name="install_failed_toast">Install failed: %1$s</string>
+
+    <string name="login_subtitle">Sign in with your GitHub account to use the store</string>
+    <string name="login_device_btn">Sign in with GitHub device code</string>
+    <string name="login_or">— or —</string>
+    <string name="login_pat_label">Personal access token (PAT)</string>
+    <string name="login_pat_btn">Sign in with token</string>
+    <string name="login_pat_note">Create a Classic token at github.com/settings/tokens with public_repo scope. For device-code sign-in, set your OAuth app Client ID in app/build.gradle.kts.</string>
+    <string name="login_code_prompt">Enter this code on GitHub:</string>
+    <string name="login_code_page_hint">at github.com/login/device</string>
+    <string name="login_open_page_btn">Open GitHub sign-in page</string>
+    <string name="login_waiting">Waiting for your confirmation…</string>
+    <string name="login_new_code">Generate a new code</string>
+    <string name="login_code_expired">The code expired — please try again</string>
+    <string name="login_err_blank_token">Enter a token</string>
+    <string name="login_err_client_id">Set GITHUB_CLIENT_ID in app/build.gradle.kts first, or sign in with a personal token.</string>
+    <string name="login_err_invalid_token">Invalid token (code %1$d)</string>
+
+    <string name="admin_current_account">Current account:</string>
+    <string name="admin_add_new">Add new app</string>
+    <string name="admin_new_app">Add new app</string>
+    <string name="admin_editing_fmt">Editing “%1$s”</string>
+    <string name="admin_managers_hint">Managers (GitHub usernames, comma-separated)</string>
+    <string name="admin_categories_hint">Categories (comma-separated)</string>
+    <string name="admin_publish_btn">Publish to GitHub (commit apps.json)</string>
+    <string name="admin_local_note">Saving is local only; use “Publish to GitHub” to commit changes.</string>
+    <string name="admin_no_access">You are not in the catalog admins list or lack push access.</string>
+    <string name="admin_publish_denied">You are not allowed to publish.</string>
+    <string name="admin_publish_denied_gh">You are not allowed to publish (GitHub rejected push access).</string>
+    <string name="admin_repo_not_set">Set CATALOG_REPO in app/build.gradle.kts first.</string>
+    <string name="admin_no_token">GitHub token not found — please sign in again.</string>
+    <string name="admin_publish_ok">✅ Published (commit in %1$s)</string>
+    <string name="admin_publish_fail">Publish failed: %1$s</string>
+    <string name="admin_upsert_fmt">“%1$s” added to the list — press “Publish” to apply it on GitHub.</string>
+    <string name="admin_deleted_fmt">“%1$s” removed — press “Publish” to apply it on GitHub.</string>
+    <string name="admin_load_fail">Failed to load</string>
+    <string name="admin_commit_msg">Idol Store admin (%1$s): update apps.json</string>
+    <string name="admin_initial_catalog_msg">Idol Store: initial catalog</string>
+
+    <string name="form_id">Unique ID (id)</string>
+    <string name="form_name">Display name</string>
+    <string name="form_developer">Developer</string>
+    <string name="form_category_hint">Category (must be one of the defined ones)</string>
+    <string name="form_description">Description</string>
+    <string name="form_icon_url">Icon URL</string>
+    <string name="form_package">Package name (for install detection)</string>
+    <string name="form_github">Repo / release page on GitHub</string>
+    <string name="form_website">Developer website (optional)</string>
+    <string name="form_email">Developer email (optional)</string>
+    <string name="form_telegram">Telegram channel link (optional)</string>
+    <string name="form_err_id">ID is required</string>
+    <string name="form_err_name">Name is required</string>
+    <string name="form_err_github">Invalid GitHub URL (e.g. owner/repo)</string>
+    <string name="form_save_list">Save to list</string>
+    <string name="form_cancel">Cancel</string>
+    <string name="form_invalid_url_fmt">Invalid GitHub URL: %1$s</string>
+
+    <string name="delete_dialog_title_fmt">Delete “%1$s”?</string>
+    <string name="delete_dialog_text">The app will be removed from the list; nothing changes on GitHub until you press “Publish”.</string>
+    <string name="delete_confirm">Delete</string>
+
+    <string name="err_repo_not_found">Repo “%1$s” not found</string>
+    <string name="err_rate_limit">GitHub rate limit hit — try again later</string>
+    <string name="err_invalid_token">GitHub token is invalid — sign in again</string>
+    <string name="err_no_stable_release">No stable release published yet</string>
+    <string name="err_no_universal_apk">No universal APK in the latest release</string>
+    <string name="err_invalid_repo_url">Invalid GitHub URL: %1$s</string>
+    <string name="err_catalog_load">Failed to load catalog</string>
+    <string name="err_github_code">GitHub error (code %1$d)</string>
+    <string name="err_unknown">Unknown error</string>
+    <string name="err_repo_details">Failed to fetch repo info (code %1$d)</string>
+    <string name="err_empty_response">Empty response</string>
+    <string name="err_device_start">Device-flow start failed (code %1$d)</string>
+    <string name="err_exchange_token">Token exchange failed</string>
+    <string name="err_read_catalog">Failed to read catalog (code %1$d)</string>
+    <string name="err_commit_fail">Catalog commit failed (code %1$d)</string>
+
+    <string name="notif_channel_name">App updates</string>
+    <string name="notif_channel_desc">Notifications when store apps release new versions</string>
+    <string name="notif_title_fmt">%1$s update</string>
+    <string name="notif_text_fmt">Version %1$s is out — tap to view &amp; install</string>
+    <string name="notif_bigtext_fmt">“%1$s” was updated. Version %2$s is out — tap to view changes and install.</string>
+    <string name="notif_permission_denied">Grant the notification permission in settings to receive updates</string>
+</resources>

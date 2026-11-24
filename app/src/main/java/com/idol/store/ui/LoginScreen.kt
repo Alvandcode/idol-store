@@ -17,8 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -34,11 +34,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.idol.store.R
+import com.idol.store.data.ClientIdMissingException
 
 @Composable
 fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
@@ -47,6 +51,7 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
     }
 
     var pat by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     Box(
         Modifier
@@ -61,12 +66,17 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
                 .widthIn(max = 420.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("🛍️", fontSize = 52.sp)
-            Spacer(Modifier.height(8.dp))
-            Text("Idol Store", fontWeight = FontWeight.ExtraBold, fontSize = 28.sp)
+            Icon(
+                painter = painterResource(R.drawable.ic_launcher_foreground),
+                contentDescription = stringResource(R.string.app_name),
+                modifier = Modifier.size(96.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(stringResource(R.string.app_name), fontWeight = FontWeight.ExtraBold, fontSize = 28.sp)
             Spacer(Modifier.height(6.dp))
             Text(
-                "برای استفاده از استور، با حساب گیت‌هاب وارد شوید",
+                stringResource(R.string.login_subtitle),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
@@ -79,10 +89,10 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
                     onClick = { vm.startDeviceFlow() },
                     enabled = !vm.busy,
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("ورود با کد دستگاه گیت‌هاب") }
+                ) { Text(stringResource(R.string.login_device_btn)) }
 
                 Text(
-                    "— یا —",
+                    stringResource(R.string.login_or),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
                 )
@@ -92,7 +102,7 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
                     value = pat,
                     onValueChange = { pat = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("توکن دسترسی شخصی (PAT)") },
+                    label = { Text(stringResource(R.string.login_pat_label)) },
                     placeholder = { Text("ghp_…") },
                     singleLine = true,
                 )
@@ -101,12 +111,11 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
                     onClick = { vm.loginWithToken(pat) },
                     enabled = !vm.busy,
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("ورود با توکن") }
+                ) { Text(stringResource(R.string.login_pat_btn)) }
 
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "توکن Classic از github.com/settings/tokens با دسترسی public_repo بسازید. " +
-                        "برای ورود با کد دستگاه، Client ID اپ OAuth را در app/build.gradle.kts تنظیم کنید.",
+                    stringResource(R.string.login_pat_note),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -123,7 +132,7 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            "این کد را در گیت‌هاب وارد کنید:",
+                            stringResource(R.string.login_code_prompt),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.height(10.dp))
@@ -136,7 +145,7 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
                         )
                         Spacer(Modifier.height(10.dp))
                         Text(
-                            "در صفحه github.com/login/device",
+                            stringResource(R.string.login_code_page_hint),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -144,7 +153,7 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
                         Button(
                             onClick = { vm.openVerificationPage() },
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("باز کردن صفحه ورود گیت‌هاب") }
+                        ) { Text(stringResource(R.string.login_open_page_btn)) }
                         Spacer(Modifier.height(14.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -153,10 +162,12 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
                             if (vm.polling) {
                                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                                 Spacer(Modifier.width(8.dp))
-                                Text("در انتظار تأیید شما…", fontSize = 13.sp)
+                                Text(stringResource(R.string.login_waiting), fontSize = 13.sp)
                             }
                         }
-                        TextButton(onClick = { vm.startDeviceFlow() }) { Text("ساخت کد جدید") }
+                        TextButton(onClick = { vm.startDeviceFlow() }) {
+                            Text(stringResource(R.string.login_new_code))
+                        }
                     }
                 }
             }
@@ -164,11 +175,38 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
             vm.error?.let {
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    it,
+                    // خطای Client ID را به‌صورت پیش‌فرضِ رشته‌ی محلی نشان می‌دهیم
+                    if (it.contains("GITHUB_CLIENT_ID")) stringResource(R.string.login_err_client_id) else it,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,
                 )
             }
+
+            Spacer(Modifier.height(20.dp))
+            LanguageSwitcher()
         }
+    }
+}
+
+/** سوییچ زبان — با ذخیره خودکار (per-app locale) */
+@Composable
+fun LanguageSwitcher() {
+    val context = LocalContext.current
+    val current = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(stringResource(R.string.settings_language), fontSize = 12.sp)
+        OutlinedButton(onClick = {
+            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                androidx.core.os.LocaleListCompat.forLanguageTags("fa")
+            )
+        }, enabled = current != "fa") { Text(stringResource(R.string.lang_fa), fontSize = 12.sp) }
+        OutlinedButton(onClick = {
+            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                androidx.core.os.LocaleListCompat.forLanguageTags("en")
+            )
+        }, enabled = current != "en") { Text(stringResource(R.string.lang_en), fontSize = 12.sp) }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.idol.store.BuildConfig
+import com.idol.store.R
 import com.idol.store.data.AdminAccess
 import com.idol.store.data.AuthManager
 import com.idol.store.data.Catalog
@@ -59,6 +60,7 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         globalError = null
         message = null
         viewModelScope.launch {
+            val ctx = getApplication<Application>()
             try {
                 // اگر توکن از قبل ذخیره شده ولی نام کاربری ندارد، یک‌بار بگیر
                 login = AuthManager.login(getApplication())
@@ -79,11 +81,19 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 admins = catalog.admins.joinToString(", ")
                 categories = catalog.categories.joinToString(", ")
                 allowed = AdminAccess.isAllowed(catalog, login, BuildConfig.CATALOG_REPO)
+                if (allowed && login != null) {
+                    // تأیید نهایی از گیت‌هاب: فقط توکنِ دارای دسترسی push واقعی ادمین است
+                    allowed = try {
+                        gh.hasPushAccess(BuildConfig.CATALOG_REPO, login!!)
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
                 if (!allowed) {
-                    globalError = "شما در لیست مدیران کاتالوگ نیستید."
+                    globalError = ctx.getString(R.string.admin_no_access)
                 }
             } catch (e: Exception) {
-                globalError = e.message ?: "خطا در بارگذاری"
+                globalError = AppErrors.message(ctx, e)
             } finally {
                 loading = false
             }
@@ -102,29 +112,41 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
 
     /** ذخیره اپ در لیست محلی (هنوز منتشر نشده) */
     fun upsertApp(app: StoreApp) {
+        val ctx = getApplication<Application>()
         val existingIndex = apps.indexOfFirst { it.id == app.id }
         apps = if (existingIndex >= 0) {
             apps.toMutableList().apply { set(existingIndex, app) }
         } else apps + app
         closeEditor()
-        message = "«${app.name}» به لیست اضافه شد — برای اعمال روی گیت‌هاب دکمه «انتشار» را بزن."
+        message = ctx.getString(R.string.admin_upsert_fmt, app.name)
     }
 
     fun deleteApp(app: StoreApp) {
         apps = apps.filterNot { it.id == app.id }
-        message = "«${app.name}» حذف شد — برای اعمال روی گیت‌هاب دکمه «انتشار» را بزن."
+        message = getApplication<Application>().getString(R.string.admin_deleted_fmt, app.name)
     }
 
     /** انتشار نهایی: کامیت apps.json در ریپوی کاتالوگ */
     fun publish() {
+        val ctx = getApplication<Application>()
         if (saving) return
         if (BuildConfig.CATALOG_REPO.isBlank() || BuildConfig.CATALOG_REPO.contains("USERNAME")) {
-            message = "ابتدا CATALOG_REPO را در app/build.gradle.kts تنظیم کنید."
+            message = ctx.getString(R.string.admin_repo_not_set)
             return
         }
         val token = AuthManager.token(getApplication())
         if (token.isNullOrBlank()) {
-            message = "توکن گیت‌هاب یافت نشد — دوباره وارد شوید."
+            message = ctx.getString(R.string.admin_no_token)
+            return
+        }
+        // دفاع نهایی قبل از هر کامیت: تأیید مستقیم از گیت‌هاب
+        val verified = try {
+            gh.hasPushAccess(BuildConfig.CATALOG_REPO, login ?: "")
+        } catch (_: Exception) {
+            false
+        }
+        if (!verified) {
+            message = ctx.getString(R.string.admin_publish_denied_gh)
             return
         }
         // دفاع دوم: دسترسی را همین‌جا هم چک می‌کنیم (مهم‌ترین حفاظ، خود گیت‌هاب است)
@@ -134,15 +156,14 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 BuildConfig.CATALOG_REPO,
             )
         ) {
-            message = "شما اجازه انتشار ندارید."
+            message = ctx.getString(R.string.admin_publish_denied)
             return
         }
 
         saving = true
         message = null
         viewModelScope.launch {
-            try {
-                val catalog = Catalog(
+            try {                val catalog = Catalog(
                     apps = apps,
                     admins = admins.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                     categories = categories.split(",").map { it.trim() }.filter { it.isNotEmpty() },
@@ -154,7 +175,7 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 }.encodeToString(Catalog.serializer(), catalog)
 
                 val loginName = login ?: ""
-                val commitMessage = "Idol Store admin ($loginName): update apps.json"
+                val commitMessage = ctx.getString(R.string.admin_commit_msg, loginName)
                 GitHubService.commitCatalogFile(
                     repo = BuildConfig.CATALOG_REPO,
                     path = BuildConfig.CATALOG_PATH,
@@ -162,9 +183,9 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                     content = json,
                     token = token,
                 )
-                message = "✅ منتشر شد (کامیت در ${BuildConfig.CATALOG_REPO})"
+                message = ctx.getString(R.string.admin_publish_ok, BuildConfig.CATALOG_REPO)
             } catch (e: Exception) {
-                message = "خطا در انتشار: ${e.message}"
+                message = ctx.getString(R.string.admin_publish_fail, AppErrors.message(ctx, e))
             } finally {
                 saving = false
             }

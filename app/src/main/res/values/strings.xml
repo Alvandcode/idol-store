@@ -1,4 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- زبان پیش‌فرض: فارسی -->
     <string name="app_name">Idol Store</string>
+
+    <string name="refresh">بروزرسانی</string>
+    <string name="logout">خروج</string>
+    <string name="logout_account">خروج از حساب</string>
+    <string name="admin_panel">پنل مدیریت</string>
+    <string name="retry">تلاش مجدد</string>
+    <string name="back">بازگشت</string>
+    <string name="delete">حذف</string>
+    <string name="edit">ویرایش</string>
+    <string name="cancel_download">لغو</string>
+    <string name="install">نصب</string>
+    <string name="download">دانلود</string>
+    <string name="progress_fmt">٪%1$d</string>
+    <string name="installed">نصب‌شده</string>
+    <string name="installed_version_fmt">نسخه نصب‌شده: %1$d</string>
+    <string name="version_fmt">نسخه %1$s</string>
+    <string name="fetching">در حال دریافت…</string>
+    <string name="error_loading">خطا در دریافت اطلاعات</string>
+    <string name="nothing_found">چیزی پیدا نشد</string>
+    <string name="no_apps">برنامه‌ای یافت نشد</string>
+    <string name="search_hint">جستجوی برنامه‌ها…</string>
+    <string name="search_clear">پاک کردن</string>
+    <string name="search_empty_prompt">عبارتی را جستجو کنید…</string>
+
+    <string name="tab_store">استور</string>
+    <string name="tab_search">جستجو</string>
+    <string name="tab_categories">دسته‌ها</string>
+    <string name="tab_you">شما</string>
+
+    <string name="all_chip">همه</string>
+    <string name="recent_updates">بروزرسانی‌های اخیر</string>
+    <string name="other_apps">سایر برنامه‌ها</string>
+    <string name="view_all">مشاهده همه</string>
+    <string name="categories_title">دسته‌بندی‌ها</string>
+    <string name="no_categories_yet">هنوز دسته‌بندی‌ای ساخته نشده — از پنل مدیریت می‌توانی بسازی</string>
+    <string name="apps_count_fmt">%1$d برنامه</string>
+    <string name="category_empty">برنامه‌ای در این دسته نیست</string>
+    <string name="list_empty">برنامه‌ای نیست</string>
+
+    <string name="you_github_account">حساب گیت‌هاب</string>
+    <string name="you_stats_fmt">%1$d برنامه در استور • %2$d نصب‌شده</string>
+    <string name="you_installed_title">نصب‌شده روی دستگاه</string>
+    <string name="you_no_installed">هنوز برنامه‌ای نصب نکرده‌ای.</string>
+    <string name="settings_theme">تم</string>
+    <string name="settings_language">زبان برنامه</string>
+    <string name="theme_dark">تیره</string>
+    <string name="theme_light">روشن</string>
+    <string name="theme_system">سیستم</string>
+    <string name="lang_fa">فارسی</string>
+    <string name="lang_en">English</string>
+
+    <string name="detail_description">توضیحات</string>
+    <string name="detail_desc_none">توضیحی ثبت نشده است.</string>
+    <string name="detail_contact_title">تماس با سازنده</string>
+    <string name="contact_website">وب‌سایت</string>
+    <string name="contact_email">ایمیل</string>
+    <string name="contact_github">گیت‌هاب</string>
+    <string name="contact_telegram">تلگرام</string>
+    <string name="detail_latest_stable">آخرین ریلیز پایدار</string>
+    <string name="detail_older_releases">ریلیزهای قدیمی‌تر</string>
+    <string name="release_meta_fmt">%1$s  •  %2$s  •  %3$s</string>
+    <string name="release_page">صفحه ریلیز</string>
+    <string name="notif_toggle_title">اعلان بروزرسانی</string>
+    <string name="notif_toggle_subtitle">با انتشار نسخه جدید، خبرت می‌کنیم</string>
+    <string name="star">ستاره</string>
+    <string name="allow_install_toast">ابتدا اجازه نصب از این منبع را بدهید</string>
+    <string name="install_failed_toast">نصب ممکن نشد: %1$s</string>
+
+    <string name="login_subtitle">برای استفاده از استور، با حساب گیت‌هاب وارد شوید</string>
+    <string name="login_device_btn">ورود با کد دستگاه گیت‌هاب</string>
+    <string name="login_or">— یا —</string>
+    <string name="login_pat_label">توکن دسترسی شخصی (PAT)</string>
+    <string name="login_pat_btn">ورود با توکن</string>
+    <string name="login_pat_note">توکن Classic از github.com/settings/tokens با دسترسی public_repo بسازید. برای ورود با کد دستگاه، Client ID اپ OAuth را در app/build.gradle.kts تنظیم کنید.</string>
+    <string name="login_code_prompt">این کد را در گیت‌هاب وارد کنید:</string>
+    <string name="login_code_page_hint">در صفحه github.com/login/device</string>
+    <string name="login_open_page_btn">باز کردن صفحه ورود گیت‌هاب</string>
+    <string name="login_waiting">در انتظار تأیید شما…</string>
+    <string name="login_new_code">ساخت کد جدید</string>
+    <string name="login_code_expired">زمان اعتبار کد به پایان رسید — دوباره تلاش کنید</string>
+    <string name="login_err_blank_token">توکن را وارد کنید</string>
+    <string name="login_err_client_id">ابتدا در app/build.gradle.kts مقدار GITHUB_CLIENT_ID را تنظیم کنید، یا با توکن شخصی وارد شوید.</string>
+    <string name="login_err_invalid_token">توکن نامعتبر است (کد %1$d)</string>
+
+    <string name="admin_current_account">حساب فعلی:</string>
+    <string name="admin_add_new">افزودن برنامه جدید</string>
+    <string name="admin_new_app">افزودن برنامه جدید</string>
+    <string name="admin_editing_fmt">ویرایش «%1$s»</string>
+    <string name="admin_managers_hint">مدیران (نام کاربری گیت‌هاب، با کاما جدا شود)</string>
+    <string name="admin_categories_hint">دسته‌بندی‌ها (با کاما جدا شود)</string>
+    <string name="admin_publish_btn">انتشار در گیت‌هاب (کامیت apps.json)</string>
+    <string name="admin_local_note">ذخیره فقط در حافظه داخلی است؛ با دکمه «انتشار در گیت‌هاب» به‌صورت کامیت منتشر می‌شود.</string>
+    <string name="admin_no_access">شما در لیست مدیران کاتالوگ نیستید یا دسترسی push ندارید.</string>
+    <string name="admin_publish_denied">شما اجازه انتشار ندارید.</string>
+    <string name="admin_publish_denied_gh">شما اجازه انتشار ندارید (گیت‌هاب دسترسی push را تأیید نکرد).</string>
+    <string name="admin_repo_not_set">ابتدا CATALOG_REPO را در app/build.gradle.kts تنظیم کنید.</string>
+    <string name="admin_no_token">توکن گیت‌هاب یافت نشد — دوباره وارد شوید.</string>
+    <string name="admin_publish_ok">✅ منتشر شد (کامیت در %1$s)</string>
+    <string name="admin_publish_fail">خطا در انتشار: %1$s</string>
+    <string name="admin_upsert_fmt">«%1$s» به لیست اضافه شد — برای اعمال روی گیت‌هاب دکمه «انتشار» را بزن.</string>
+    <string name="admin_deleted_fmt">«%1$s» حذف شد — برای اعمال روی گیت‌هاب دکمه «انتشار» را بزن.</string>
+    <string name="admin_load_fail">خطا در بارگذاری</string>
+    <string name="admin_commit_msg">Idol Store admin (%1$s): update apps.json</string>
+    <string name="admin_initial_catalog_msg">Idol Store: کاتالوگ</string>
+
+    <string name="form_id">شناسه یکتا (id)</string>
+    <string name="form_name">نام نمایشی</string>
+    <string name="form_developer">توسعه‌دهنده</string>
+    <string name="form_category_hint">دسته (باید از دسته‌های تعریف‌شده باشد)</string>
+    <string name="form_description">توضیحات</string>
+    <string name="form_icon_url">آدرس آیکون (URL)</string>
+    <string name="form_package">نام پکیج (برای تشخیص نصب)</string>
+    <string name="form_github">ریپو/صفحه ریلیز گیت‌هاب</string>
+    <string name="form_website">وب‌سایت سازنده (اختیاری)</string>
+    <string name="form_email">ایمیل سازنده (اختیاری)</string>
+    <string name="form_telegram">لینک کانال تلگرام (اختیاری)</string>
+    <string name="form_err_id">شناسه (id) الزامی است</string>
+    <string name="form_err_name">نام الزامی است</string>
+    <string name="form_err_github">آدرس گیت‌هاب نامعتبر است (مثال: owner/repo)</string>
+    <string name="form_save_list">ذخیره در لیست</string>
+    <string name="form_cancel">انصراف</string>
+    <string name="form_invalid_url_fmt">آدرس گیت‌هاب نامعتبر است: %1$s</string>
+
+    <string name="delete_dialog_title_fmt">حذف «%1$s»؟</string>
+    <string name="delete_dialog_text">این اپ از لیست حذف می‌شود؛ تا «انتشار» نزنی روی گیت‌هاب تغییر نمی‌کند.</string>
+    <string name="delete_confirm">حذف</string>
+
+    <string name="err_repo_not_found">ریپوی «%1$s» پیدا نشد</string>
+    <string name="err_rate_limit">محدودیت درخواست گیت‌هاب (rate limit) — کمی بعد دوباره امتحان کنید</string>
+    <string name="err_invalid_token">توکن گیت‌هاب نامعتبر است — دوباره وارد شوید</string>
+    <string name="err_no_stable_release">هیچ ریلیز پایداری منتشر نشده</string>
+    <string name="err_no_universal_apk">در آخرین ریلیز فایل APK یونیورسال نیست</string>
+    <string name="err_invalid_repo_url">آدرس گیت‌هاب نامعتبر است: %1$s</string>
+    <string name="err_catalog_load">خطا در دریافت کاتالوگ</string>
+    <string name="err_github_code">خطای گیت‌هاب (کد %1$d)</string>
+    <string name="err_unknown">خطای ناشناخته</string>
+    <string name="err_repo_details">خطای دریافت اطلاعات ریپو (کد %1$d)</string>
+    <string name="err_empty_response">پاسخ خالی بود</string>
+    <string name="err_device_start">خطای شروع ورود (کد %1$d)</string>
+    <string name="err_exchange_token">خطای دریافت توکن</string>
+    <string name="err_read_catalog">خطای خواندن کاتالوگ (کد %1$d)</string>
+    <string name="err_commit_fail">انتشار کاتالوگ ناموفق بود (کد %1$d)</string>
+
+    <string name="notif_channel_name">بروزرسانی برنامه‌ها</string>
+    <string name="notif_channel_desc">اعلان انتشار نسخه جدید برنامه‌های استور</string>
+    <string name="notif_title_fmt">بروزرسانی %1$s</string>
+    <string name="notif_text_fmt">نسخه %1$s منتشر شد — برای دیدن و نصب بزنید</string>
+    <string name="notif_bigtext_fmt">«%1$s» بروزرسانی شد. نسخه %2$s منتشر شد — برای دیدن تغییرات و نصب بزنید.</string>
+    <string name="notif_permission_denied">برای دریافت اعلان، مجوز نوتیفیکیشن را در تنظیمات بدهید</string>
 </resources>

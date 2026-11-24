@@ -46,10 +46,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.idol.store.R
 import com.idol.store.data.GitHubService
 import com.idol.store.data.StoreApp
 
@@ -61,10 +64,10 @@ fun AdminScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("پنل مدیریت", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.admin_panel), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
             )
@@ -76,13 +79,12 @@ fun AdminScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
         ) {
-            // شناسه ورودی
             Card(
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Text(
-                    text = "حساب فعلی: ${vm.currentLogin ?: "—"}",
+                    text = stringResource(R.string.admin_current_account) + " ${vm.currentLogin ?: "—"}",
                     fontSize = 13.sp,
                     modifier = Modifier.padding(12.dp),
                 )
@@ -103,12 +105,12 @@ fun AdminScreen(onBack: () -> Unit) {
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        "⛔ ${vm.globalError ?: "دسترسی مدیریتی ندارید."}",
+                        "⛔ " + stringResource(R.string.admin_no_access),
                         color = MaterialTheme.colorScheme.error,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(12.dp))
-                    OutlinedButton(onClick = onBack) { Text("بازگشت به استور") }
+                    OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
                 }
 
                 vm.editing != null -> AppForm(vm)
@@ -134,7 +136,7 @@ private fun AdminList(vm: AdminViewModel) {
             ) {
                 Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("افزودن برنامه جدید")
+                Text(stringResource(R.string.admin_add_new))
             }
         }
 
@@ -160,10 +162,18 @@ private fun AdminList(vm: AdminViewModel) {
                         )
                     }
                     FilledTonalIconButton(onClick = { vm.openEditor(app) }) {
-                        Icon(Icons.Filled.Edit, contentDescription = "ویرایش", modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Filled.Edit,
+                            contentDescription = stringResource(R.string.edit),
+                            modifier = Modifier.size(18.dp),
+                        )
                     }
                     IconButton(onClick = { pendingDelete = app }) {
-                        Icon(Icons.Filled.Delete, contentDescription = "حذف", modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete),
+                            modifier = Modifier.size(18.dp),
+                        )
                     }
                 }
             }
@@ -172,7 +182,11 @@ private fun AdminList(vm: AdminViewModel) {
         item {
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
             Spacer(Modifier.height(8.dp))
-            Text("مدیران (نام کاربری گیت‌هاب، با کاما جدا شود)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(
+                stringResource(R.string.admin_managers_hint),
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+            )
             Spacer(Modifier.height(6.dp))
             OutlinedTextField(
                 value = vm.admins,
@@ -182,13 +196,17 @@ private fun AdminList(vm: AdminViewModel) {
                 singleLine = true,
             )
             Spacer(Modifier.height(12.dp))
-            Text("دسته‌بندی‌ها (با کاما جدا شود)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(
+                stringResource(R.string.admin_categories_hint),
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+            )
             Spacer(Modifier.height(6.dp))
             OutlinedTextField(
                 value = vm.categories,
                 onValueChange = { vm.categories = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("ابزارها, رسانه, بازی, امنیت") },
+                placeholder = { Text("Tools, Media, Security") },
                 singleLine = true,
             )
             Spacer(Modifier.height(12.dp))
@@ -201,7 +219,7 @@ private fun AdminList(vm: AdminViewModel) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(8.dp))
                 }
-                Text("انتشار در گیت‌هاب (کامیت apps.json)")
+                Text(stringResource(R.string.admin_publish_btn))
             }
             vm.message?.let {
                 Spacer(Modifier.height(8.dp))
@@ -228,11 +246,7 @@ private fun AdminList(vm: AdminViewModel) {
 }
 
 @Composable
-private fun AdminTextField(
-    label: String,
-    value: String,
-    onChange: (String) -> Unit,
-) {
+private fun AdminTextField(label: String, value: String, onChange: (String) -> Unit) {
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
@@ -264,29 +278,29 @@ private fun AppForm(vm: AdminViewModel) {
             .verticalScroll(rememberScrollState()),
     ) {
         Text(
-            if (vm.editingNew) "افزودن برنامه جدید" else "ویرایش «${editing.name}»",
+            if (vm.editingNew) stringResource(R.string.admin_new_app)
+            else stringResource(R.string.admin_editing_fmt, editing.name),
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
         )
         Spacer(Modifier.height(12.dp))
 
-        AdminTextField("شناسه یکتا (id) *", id) { id = it }
-        AdminTextField("نام نمایشی *", name) { name = it }
-        AdminTextField("توسعه‌دهنده", developer) { developer = it }
-        AdminTextField("دسته", category) { category = it }
+        AdminTextField(stringResource(R.string.form_id) + " *", id) { id = it }
+        AdminTextField(stringResource(R.string.form_name) + " *", name) { name = it }
+        AdminTextField(stringResource(R.string.form_developer), developer) { developer = it }
+        AdminTextField(stringResource(R.string.form_category_hint), category) { category = it }
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("توضیحات") },
+            label = { Text(stringResource(R.string.form_description)) },
             modifier = Modifier.fillMaxWidth(),
         )
-        AdminTextField("آدرس آیکون (URL)", iconUrl) { iconUrl = it }
-        AdminTextField("نام پکیج (برای تشخیص نصب)", packageName) { packageName = it }
-        AdminTextField("ریپو/صفحه ریلیز گیت‌هاب *", github) { github = it }
-        AdminTextField("وب‌سایت سازنده (اختیاری)", website) { website = it }
-        AdminTextField("ایمیل سازنده (اختیاری)", email) { email = it }
-        AdminTextField("لینک کانال تلگرام (اختیاری)", telegram) { telegram = it }
-        AdminTextField("دسته (باید از دسته‌های تعریف‌شده باشد)", category) { category = it }
+        AdminTextField(stringResource(R.string.form_icon_url), iconUrl) { iconUrl = it }
+        AdminTextField(stringResource(R.string.form_package), packageName) { packageName = it }
+        AdminTextField(stringResource(R.string.form_github) + " *", github) { github = it }
+        AdminTextField(stringResource(R.string.form_website), website) { website = it }
+        AdminTextField(stringResource(R.string.form_email), email) { email = it }
+        AdminTextField(stringResource(R.string.form_telegram), telegram) { telegram = it }
 
         formError?.let {
             Spacer(Modifier.height(8.dp))
@@ -295,13 +309,14 @@ private fun AppForm(vm: AdminViewModel) {
 
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val context = androidx.compose.ui.platform.LocalContext.current
             Button(
                 onClick = {
                     when {
-                        id.isBlank() -> formError = "شناسه (id) الزامی است"
-                        name.isBlank() -> formError = "نام الزامی است"
+                        id.isBlank() -> formError = context.getString(R.string.form_err_id)
+                        name.isBlank() -> formError = context.getString(R.string.form_err_name)
                         GitHubService.repoFromUrl(github) == null ->
-                            formError = "آدرس گیت‌هاب نامعتبر است (مثال: owner/repo)"
+                            formError = context.getString(R.string.form_err_github)
                         else -> {
                             formError = null
                             vm.upsertApp(
@@ -313,7 +328,7 @@ private fun AppForm(vm: AdminViewModel) {
                                     description = description.trim().ifBlank { null },
                                     iconUrl = iconUrl.trim().ifBlank { null },
                                     packageName = packageName.trim().ifBlank { null },
-                                    github = GitHubService.repoFromUrl(github.trim())!!, // بالاتر ولیدیشن شده
+                                    github = GitHubService.repoFromUrl(github.trim())!!,
                                     website = website.trim().ifBlank { null },
                                     email = email.trim().ifBlank { null },
                                     telegram = telegram.trim().ifBlank { null },
@@ -322,12 +337,14 @@ private fun AppForm(vm: AdminViewModel) {
                         }
                     }
                 },
-            ) { Text("ذخیره در لیست") }
-            OutlinedButton(onClick = { vm.closeEditor() }) { Text("انصراف") }
+            ) { Text(stringResource(R.string.form_save_list)) }
+            OutlinedButton(onClick = { vm.closeEditor() }) {
+                Text(stringResource(R.string.form_cancel))
+            }
         }
         Spacer(Modifier.height(10.dp))
         Text(
-            "ذخیره فقط در حافظه داخلی است؛ با دکمه «انتشار در گیت‌هاب» به‌صورت کامیت منتشر می‌شود.",
+            stringResource(R.string.admin_local_note),
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -343,13 +360,13 @@ private fun ConfirmDeleteDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("حذف «${app.name}»؟") },
-        text = { Text("این اپ از لیست حذف می‌شود؛ تا «انتشار» نزنی روی گیت‌هاب تغییر نمی‌کند.") },
+        title = { Text(stringResource(R.string.delete_dialog_title_fmt, app.name)) },
+        text = { Text(stringResource(R.string.delete_dialog_text)) },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text("حذف") }
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.delete_confirm)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("انصراف") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.form_cancel)) }
         },
     )
 }

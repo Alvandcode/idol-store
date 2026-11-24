@@ -74,9 +74,11 @@ class UpdateChecker(context: Context, params: WorkerParameters) : CoroutineWorke
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(
-                    CHANNEL_ID, "بروزرسانی برنامه‌ها", NotificationManager.IMPORTANCE_DEFAULT
+                    CHANNEL_ID,
+                    context.getString(R.string.notif_channel_name),
+                    NotificationManager.IMPORTANCE_DEFAULT,
                 )
-                channel.description = "اعلان انتشار نسخه جدید برنامه‌های استور"
+                channel.description = context.getString(R.string.notif_channel_desc)
                 manager.createNotificationChannel(channel)
             }
 
@@ -96,11 +98,11 @@ class UpdateChecker(context: Context, params: WorkerParameters) : CoroutineWorke
 
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_update)
-                .setContentTitle("بروزرسانی ${app.name}")
-                .setContentText("نسخه $tag منتشر شد — برای دیدن و نصب بزنید")
+                .setContentTitle(context.getString(R.string.notif_title_fmt, app.name))
+                .setContentText(context.getString(R.string.notif_text_fmt, tag))
                 .setStyle(
                     NotificationCompat.BigTextStyle()
-                        .bigText("«${app.name}» بروزرسانی شد. نسخه $tag منتشر شد — برای دیدن تغییرات و نصب بزنید.")
+                        .bigText(context.getString(R.string.notif_bigtext_fmt, app.name, tag))
                 )
                 .setContentIntent(pending)
                 .setAutoCancel(true)

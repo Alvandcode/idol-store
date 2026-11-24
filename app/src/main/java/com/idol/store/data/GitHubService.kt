@@ -48,20 +48,29 @@ class GitHubService(private val tokenProvider: () -> String?) {
             200 -> json.decodeFromString<List<GhRelease>>(body)
                 .filter { !it.draft && !it.prerelease }
 
-            404 -> throw IOException("ریپوی «$repo» پیدا نشد")
-            403, 429 -> throw IOException("محدودیت درخواست گیت‌هاب (rate limit) — کمی بعد دوباره امتحان کنید")
-            401 -> throw IOException("توکن گیت‌هاب نامعتبر است — دوباره وارد شوید")
-            else -> throw IOException("خطای گیت‌هاب (کد $code)")
+            404 -> throw GitHubApiException(404, repo)
+            403, 429 -> throw GitHubApiException(403, repo)
+            401 -> throw GitHubApiException(401)
+            else -> throw GitHubApiException(code, repo)
         }
     }
 
     suspend fun isStarred(repo: String): Boolean =
         get("https://api.github.com/user/starred/$repo").first == 204
 
+    /**
+     * آیا کاربرِ صاحب توکن، دسترسی push به ریپوی کاتالوگ دارد؟
+     * منبع حقیقت همین‌جاست: گیت‌هاب خودش تأیید می‌کند — اسم قابل جعل نیست.
+     */
+    suspend fun hasPushAccess(repo: String, login: String): Boolean {
+        val (code, _) = get("https://api.github.com/repos/$repo/collaborators/$login?permission=push")
+        return code == 204
+    }
+
     /** اطلاعات کلی ریپو: توضیحات، وب‌سایت، آدرس — برای صفحه اختصاصی هر پروژه */
     suspend fun repoDetails(repo: String): com.idol.store.data.GhRepoInfo {
         val (code, body) = get("https://api.github.com/repos/$repo")
-        if (code != 200) throw IOException("خطای دریافت اطلاعات ریپو (کد $code)")
+        if (code != 200) throw GitHubApiException(code, repo)
         return json.decodeFromString<com.idol.store.data.GhRepoInfo>(body)
     }
 
@@ -105,7 +114,7 @@ class GitHubService(private val tokenProvider: () -> String?) {
                 "https://api.github.com/repos/$repo/contents/$path", token
             )
             if (code == 404) return Pair(null, null)
-            if (code != 200) throw IOException("خطای خواندن کاتالوگ (کد $code)")
+            if (code != 200) throw GitHubApiException(code)
             val parsed = json.decodeFromString<GhContents>(body)
             val decoded = parsed.content
                 ?.replace("\n", "")
@@ -129,8 +138,7 @@ class GitHubService(private val tokenProvider: () -> String?) {
                 "https://api.github.com/repos/$repo/contents/$path", token, method = "PUT", bodyJson = payload
             )
             if (code !in 200..201) {
-                val err = try { json.decodeFromString<GhError>(body).message } catch (_: Exception) { null }
-                throw IOException("انتشار کاتالوگ ناموفق بود (کد $code)${err?.let { ": $it" } ?: ""}")
+                throw GitHubApiException(code)
             }
             return try { json.decodeFromString<GhContents>(body).sha.orEmpty() } catch (_: Exception) { "" }
         }

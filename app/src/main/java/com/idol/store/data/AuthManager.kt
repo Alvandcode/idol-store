@@ -14,6 +14,17 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 
+/** خطای GitHub API با کد قابل نگاشت به پیام محلی */
+class GitHubApiException(
+    val code: Int,
+    val repo: String? = null,
+) : IOException(code.toString())
+
+/** خطاهای سطح استور برای پیام‌های محلی */
+enum class StoreErrorKind { INVALID_REPO_URL, NO_STABLE_RELEASE, NO_UNIVERSAL_APK }
+
+class StoreException(val kind: StoreErrorKind, val detail: String? = null) : Exception()
+
 @Serializable
 data class DeviceCodeResponse(
     @kotlinx.serialization.SerialName("device_code") val deviceCode: String,
@@ -98,7 +109,7 @@ object AuthManager {
     suspend fun startDeviceFlow(): DeviceFlowStart = withContext(Dispatchers.IO) {
         val clientId = BuildConfig.GITHUB_CLIENT_ID
         if (clientId.isBlank()) {
-            throw IOException("ابتدا در app/build.gradle.kts مقدار GITHUB_CLIENT_ID را تنظیم کنید، یا با توکن شخصی وارد شوید.")
+            throw ClientIdMissingException()
         }
         val form = FormBody.Builder()
             .add("client_id", clientId)
@@ -111,7 +122,7 @@ object AuthManager {
             .build()
         client.newCall(request).execute().use { resp ->
             val body = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) throw IOException("خطای شروع ورود (کد ${resp.code})")
+            if (!resp.isSuccessful) throw GitHubApiException(resp.code)
             val parsed = json.decodeFromString<DeviceCodeResponse>(body)
             DeviceFlowStart(parsed.deviceCode, parsed.userCode, parsed.verificationUri, parsed.interval)
         }
@@ -137,7 +148,7 @@ object AuthManager {
                     parsed?.error == "authorization_pending" -> ExchangeResult.Pending
                     parsed?.error == "slow_down" -> ExchangeResult.SlowDown
                     parsed?.errorDescription != null -> ExchangeResult.Error(parsed.errorDescription)
-                    else -> ExchangeResult.Error("خطای دریافت توکن")
+                    else -> ExchangeResult.Error("")
                 }
             }
         }
@@ -151,7 +162,10 @@ object AuthManager {
                 .build()
             client.newCall(request).execute().use { Pair(it.code, it.body?.string().orEmpty()) }
         }
-        if (code != 200) throw IOException("توکن نامعتبر است (کد $code)")
+        if (code != 200) throw GitHubApiException(code)
         return json.decodeFromString<GhUser>(body)
     }
 }
+
+/** Client ID اپ OAuth تنظیم نشده است */
+class ClientIdMissingException : IOException()

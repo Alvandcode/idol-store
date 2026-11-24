@@ -38,8 +38,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -51,10 +55,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.idol.store.R
+import com.idol.store.data.AppContentState
 import com.idol.store.data.DownloadState
+import com.idol.store.data.StoreApp
 import com.idol.store.data.downloadKey
 
 /** اسکلت اصلی استور با نوار پایین به سبک گوگل‌پلی */
@@ -68,22 +77,22 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit) {
                 NavigationBarItem(
                     selected = tab == 0, onClick = { tab = 0 },
                     icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                    label = { Text("استور") },
+                    label = { Text(stringResource(R.string.tab_store)) },
                 )
                 NavigationBarItem(
                     selected = tab == 1, onClick = { tab = 1 },
                     icon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                    label = { Text("جستجو") },
+                    label = { Text(stringResource(R.string.tab_search)) },
                 )
                 NavigationBarItem(
                     selected = tab == 2, onClick = { tab = 2 },
                     icon = { Icon(Icons.Filled.Category, contentDescription = null) },
-                    label = { Text("دسته‌ها") },
+                    label = { Text(stringResource(R.string.tab_categories)) },
                 )
                 NavigationBarItem(
                     selected = tab == 3, onClick = { tab = 3 },
                     icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                    label = { Text("شما") },
+                    label = { Text(stringResource(R.string.tab_you)) },
                 )
             }
         },
@@ -110,18 +119,18 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Idol Store", fontWeight = FontWeight.ExtraBold) },
+                title = { Text(stringResource(R.string.app_name), fontWeight = FontWeight.ExtraBold) },
                 actions = {
                     IconButton(onClick = { vm.refresh() }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "بروزرسانی")
+                        Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.refresh))
                     }
                     if (vm.isAdmin) {
                         IconButton(onClick = { vm.adminMode = true }) {
-                            Icon(Icons.Filled.AdminPanelSettings, contentDescription = "پنل مدیریت")
+                            Icon(Icons.Filled.AdminPanelSettings, contentDescription = stringResource(R.string.admin_panel))
                         }
                     }
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.Filled.Logout, contentDescription = "خروج")
+                        Icon(Icons.Filled.Logout, contentDescription = stringResource(R.string.logout))
                     }
                 },
             )
@@ -142,7 +151,7 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
                     FilterChip(
                         selected = selectedCat == "همه",
                         onClick = { selectedCat = "همه" },
-                        label = { Text("همه") },
+                        label = { Text(stringResource(R.string.all_chip)) },
                     )
                 }
                 items(categories) { cat ->
@@ -163,12 +172,11 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
 
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
                     if (selectedCat == "همه") {
-                        // سکشن بروزرسانی‌های اخیر
                         val recent = vm.recentApps
                         if (recent.isNotEmpty()) {
                             item {
                                 SectionHeader(
-                                    "بروزرسانی‌های اخیر",
+                                    stringResource(R.string.recent_updates),
                                     showViewAll = recent.size > 4,
                                 ) { vm.openCategory = "__recent__" }
                             }
@@ -176,7 +184,6 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
                                 AppRowItem(vm, contentMap, app)
                             }
                         }
-                        // سکشن هر دسته
                         categories.forEach { cat ->
                             val list = apps.filter { it.category == cat }
                             if (list.isNotEmpty()) {
@@ -190,13 +197,13 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
                                 }
                             }
                         }
-                        // بدون دسته
                         val others = apps.filter { it.category.isNullOrBlank() }
                         if (others.isNotEmpty()) {
                             item(key = "h_other") {
-                                SectionHeader("سایر برنامه‌ها", showViewAll = others.size > 4) {
-                                    vm.openCategory = "__other__"
-                                }
+                                SectionHeader(
+                                    stringResource(R.string.other_apps),
+                                    showViewAll = others.size > 4,
+                                ) { vm.openCategory = "__other__" }
                             }
                             items(others.take(4), key = { "o_${it.id}" }) { app ->
                                 AppRowItem(vm, contentMap, app)
@@ -206,9 +213,12 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
                         val list = apps.filter { it.category == selectedCat }
                         if (list.isEmpty()) {
                             item {
-                                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                Box(
+                                    Modifier.fillMaxWidth().padding(32.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
                                     Text(
-                                        "برنامه‌ای در این دسته نیست",
+                                        stringResource(R.string.category_empty),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
@@ -226,7 +236,7 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
 }
 
 @Composable
-private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentState>, app: com.idol.store.data.StoreApp) {
+private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentState>, app: StoreApp) {
     val states by vm.downloadStates.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
     val latest = (state as? AppContentState.Ready)?.releases?.firstOrNull()
@@ -263,9 +273,13 @@ private fun SectionHeader(title: String, showViewAll: Boolean, onViewAll: () -> 
         Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
         if (showViewAll) {
             TextButton(onClick = onViewAll) {
-                Text("مشاهده همه")
+                Text(stringResource(R.string.view_all))
                 Spacer(Modifier.width(2.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
             }
         }
     }
@@ -284,12 +298,12 @@ private fun SearchTab(vm: StoreViewModel, modifier: Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            placeholder = { Text("جستجوی برنامه‌ها…") },
+            placeholder = { Text(stringResource(R.string.search_hint)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
                 if (vm.query.isNotEmpty()) {
                     IconButton(onClick = { vm.query = "" }) {
-                        Icon(Icons.Filled.Close, contentDescription = "پاک کردن")
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_clear))
                     }
                 }
             },
@@ -304,8 +318,8 @@ private fun SearchTab(vm: StoreViewModel, modifier: Modifier) {
             if (results.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        if (vm.query.isBlank()) "عبارتی را جستجو کنید…"
-                        else "چیزی پیدا نشد",
+                        if (vm.query.isBlank()) stringResource(R.string.search_empty_prompt)
+                        else stringResource(R.string.nothing_found),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -330,7 +344,7 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
 
     Column(modifier.fillMaxSize()) {
         Text(
-            "دسته‌بندی‌ها",
+            stringResource(R.string.categories_title),
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
             modifier = Modifier.padding(16.dp),
@@ -338,7 +352,7 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
         if (categories.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    "هنوز دسته‌بندی‌ای ساخته نشده — از پنل مدیریت می‌توانی بسازی",
+                    stringResource(R.string.no_categories_yet),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(24.dp),
                 )
@@ -365,7 +379,7 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
                             Spacer(Modifier.width(12.dp))
                             Text(cat, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             Text(
-                                "$count برنامه",
+                                stringResource(R.string.apps_count_fmt, count),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp,
                             )
@@ -382,10 +396,12 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
 @Composable
 private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier) {
     val contentMap by vm.content.collectAsState()
+    val context = LocalContext.current
     val apps = vm.catalog?.apps.orEmpty()
     val installed = apps.filter { vm.installedVersionCode(it.packageName) != null }
+    var themeMode by rememberSaveable { mutableStateOf(Prefs.themeMode.name) }
 
-    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
+    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -395,7 +411,11 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier)
                     .padding(16.dp),
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("حساب گیت‌هاب", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        stringResource(R.string.you_github_account),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     Text(
                         vm.currentLogin ?: "—",
                         fontWeight = FontWeight.Bold,
@@ -403,18 +423,75 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier)
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "${apps.size} برنامه در استور • ${installed.size} نصب‌شده",
+                        stringResource(R.string.you_stats_fmt, apps.size, installed.size),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(10.dp))
-                    Button(onClick = onLogout) { Text("خروج از حساب") }
+                    Button(onClick = onLogout) { Text(stringResource(R.string.logout_account)) }
                 }
             }
         }
+
+        // تنظیمات تم
         item {
             Text(
-                "نصب‌شده روی دستگاه",
+                stringResource(R.string.settings_theme),
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+            val options = listOf(
+                ThemeMode.DARK to stringResource(R.string.theme_dark),
+                ThemeMode.LIGHT to stringResource(R.string.theme_light),
+                ThemeMode.SYSTEM to stringResource(R.string.theme_system),
+            )
+            SingleChoiceSegmentedButtonRow(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                options.forEachIndexed { index, (mode, label) ->
+                    SegmentedButton(
+                        selected = themeMode == mode.name,
+                        onClick = {
+                            themeMode = mode.name
+                            Prefs.setTheme(context, mode)
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                    ) { Text(label, fontSize = 13.sp) }
+                }
+            }
+        }
+
+        // تنظیمات زبان
+        item {
+            Text(
+                stringResource(R.string.settings_language),
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 6.dp),
+            )
+            Row(
+                Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(onClick = {
+                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                        androidx.core.os.LocaleListCompat.forLanguageTags("fa")
+                    )
+                }) { Text(stringResource(R.string.lang_fa)) }
+                OutlinedButton(onClick = {
+                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                        androidx.core.os.LocaleListCompat.forLanguageTags("en")
+                    )
+                }) { Text(stringResource(R.string.lang_en)) }
+            }
+        }
+
+        item {
+            Text(
+                stringResource(R.string.you_installed_title),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -423,7 +500,7 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier)
         if (installed.isEmpty()) {
             item {
                 Text(
-                    "هنوز برنامه‌ای نصب نکرده‌ای.",
+                    stringResource(R.string.you_no_installed),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
@@ -443,8 +520,8 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier)
 fun CategoryAppsScreen(vm: StoreViewModel, key: String, onBack: () -> Unit) {
     val contentMap by vm.content.collectAsState()
     val title = when (key) {
-        "__recent__" -> "بروزرسانی‌های اخیر"
-        "__other__" -> "سایر برنامه‌ها"
+        "__recent__" -> stringResource(R.string.recent_updates)
+        "__other__" -> stringResource(R.string.other_apps)
         else -> key
     }
     val list = when (key) {
@@ -459,7 +536,7 @@ fun CategoryAppsScreen(vm: StoreViewModel, key: String, onBack: () -> Unit) {
                 title = { Text(title, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
             )
@@ -467,7 +544,7 @@ fun CategoryAppsScreen(vm: StoreViewModel, key: String, onBack: () -> Unit) {
     ) { padding ->
         if (list.isEmpty()) {
             Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("برنامه‌ای نیست", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.list_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(Modifier.padding(padding), contentPadding = PaddingValues(bottom = 16.dp)) {

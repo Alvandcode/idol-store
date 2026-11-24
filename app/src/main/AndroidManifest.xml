@@ -26,6 +26,16 @@
             </intent-filter>
         </activity>
 
+        <!-- ذخیره خودکار زبان انتخابی اپ (فارسی/انگلیسی) -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
         <!-- برای باز کردن فایل APK دانلود‌شده و نصب آن -->
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.idol.store.R
 import java.io.File
 
 /**
@@ -25,7 +26,7 @@ object Installer {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             !context.packageManager.canRequestPackageInstalls()
         ) {
-            Toast.makeText(context, "ابتدا اجازه نصب از این منبع را بدهید", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.allow_install_toast), Toast.LENGTH_LONG).show()
             try {
                 context.startActivity(
                     Intent(
@@ -47,7 +48,11 @@ object Installer {
         try {
             context.startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(context, "نصب ممکن نشد: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                context.getString(R.string.install_failed_toast, e.message ?: ""),
+                Toast.LENGTH_LONG,
+            ).show()
         }
     }
 }

@@ -57,14 +57,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.idol.store.R
+import com.idol.store.data.AppContentState
 import com.idol.store.data.DownloadState
-import com.idol.store.data.GhRelease
 import com.idol.store.data.GhAsset
+import com.idol.store.data.GhRelease
 import com.idol.store.data.GitHubService
 import com.idol.store.data.StoreApp
 import com.idol.store.data.UpdatePrefs
@@ -87,7 +90,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                 title = { Text(app.name, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
             )
@@ -116,7 +119,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                         textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(12.dp))
-                    Button(onClick = { vm.retryApp(app) }) { Text("تلاش مجدد") }
+                    Button(onClick = { vm.retryApp(app) }) { Text(stringResource(R.string.retry)) }
                 }
 
                 is AppContentState.Ready -> {
@@ -146,7 +149,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                                     InstalledBadge()
                                     Spacer(Modifier.width(6.dp))
                                     Text(
-                                        "نسخه نصب‌شده: $installedVersion",
+                                        stringResource(R.string.installed_version_fmt, installedVersion),
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -158,7 +161,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                         FilledTonalIconButton(onClick = { vm.toggleStar(app) }) {
                             Icon(
                                 imageVector = if (s.starred == true) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                                contentDescription = "ستاره",
+                                contentDescription = stringResource(R.string.star),
                                 tint = if (s.starred == true)
                                     MaterialTheme.colorScheme.primary
                                 else
@@ -173,15 +176,15 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                     NotificationToggle(
                         appId = app.id,
                         latestTag = latest.tagName,
-                        onChanged = { },
                     )
 
                     Spacer(Modifier.height(16.dp))
 
                     // توضیحات (از کاتالوگ، وگرنه توضیحات ریپو از گیت‌هاب)
-                    SectionTitle("توضیحات")
+                    SectionTitle(stringResource(R.string.detail_description))
                     Text(
-                        app.description ?: s.repoInfo?.description ?: "توضیحی ثبت نشده است.",
+                        app.description ?: s.repoInfo?.description
+                            ?: stringResource(R.string.detail_desc_none),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 22.sp,
                     )
@@ -191,18 +194,26 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                     // اطلاعات تماس سازنده
                     val contacts = buildList {
                         (app.website ?: s.repoInfo?.homepage?.takeIf { it.isNotBlank() })?.let {
-                            add("وب‌سایت", it, Icons.Filled.Public)
+                            add(stringResource(R.string.contact_website), it, Icons.Filled.Public)
                         }
-                        app.email?.let { add("ایمیل", "mailto:$it", Icons.Filled.Email, it) }
+                        app.email?.let {
+                            add(
+                                stringResource(R.string.contact_email),
+                                "mailto:$it",
+                                Icons.Filled.Email,
+                            )
+                        }
                         add(
-                            "گیت‌هاب",
+                            stringResource(R.string.contact_github),
                             s.repoInfo?.htmlUrl ?: "https://github.com/${s.repo}",
                             Icons.Filled.Code,
                         )
-                        app.telegram?.let { add("تلگرام", it, Icons.Filled.Send) }
+                        app.telegram?.let {
+                            add(stringResource(R.string.contact_telegram), it, Icons.Filled.Send)
+                        }
                     }
                     if (contacts.isNotEmpty()) {
-                        SectionTitle("تماس با سازنده")
+                        SectionTitle(stringResource(R.string.detail_contact_title))
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -222,7 +233,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                     Spacer(Modifier.height(16.dp))
 
                     // آخرین ریلیز پایدار
-                    SectionTitle("آخرین ریلیز پایدار")
+                    SectionTitle(stringResource(R.string.detail_latest_stable))
                     ReleaseCard(
                         release = latest,
                         apk = s.universalApk,
@@ -243,7 +254,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                     val older = s.releases.drop(1).take(6)
                     if (older.isNotEmpty()) {
                         Spacer(Modifier.height(20.dp))
-                        SectionTitle("ریلیزهای قدیمی‌تر")
+                        SectionTitle(stringResource(R.string.detail_older_releases))
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             older.forEach { release ->
                                 val apk = GitHubService.pickUniversalApk(release.assets)
@@ -275,10 +286,10 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
     }
 }
 
-private data class ContactInfo(val label: String, val url: String, val icon: ImageVector, val altLabel: String? = null)
+private data class ContactInfo(val label: String, val url: String, val icon: ImageVector)
 
-private fun MutableCollection<ContactInfo>.add(label: String, url: String, icon: ImageVector, altLabel: String? = null) {
-    add(ContactInfo(label, url, icon, altLabel))
+private fun MutableCollection<ContactInfo>.add(label: String, url: String, icon: ImageVector) {
+    add(ContactInfo(label, url, icon))
 }
 
 private fun openUrl(context: android.content.Context, url: String?) {
@@ -290,11 +301,7 @@ private fun openUrl(context: android.content.Context, url: String?) {
 }
 
 @Composable
-private fun NotificationToggle(
-    appId: String,
-    latestTag: String,
-    onChanged: (Boolean) -> Unit,
-) {
+private fun NotificationToggle(appId: String, latestTag: String) {
     val context = LocalContext.current
     var notifyOn by remember(appId) { mutableStateOf(UpdatePrefs.isNotifying(context, appId)) }
     val permLauncher = rememberLauncherForActivityResult(
@@ -318,9 +325,13 @@ private fun NotificationToggle(
             )
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text("اعلان بروزرسانی", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Text(
-                    "با انتشار نسخه جدید، خبرت می‌کنیم",
+                    stringResource(R.string.notif_toggle_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                )
+                Text(
+                    stringResource(R.string.notif_toggle_subtitle),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -333,7 +344,6 @@ private fun NotificationToggle(
                     }
                     UpdatePrefs.setNotifying(context, appId, enabled, latestTag)
                     notifyOn = enabled
-                    onChanged(enabled)
                 },
             )
         }
@@ -379,7 +389,7 @@ private fun ReleaseCard(
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "نسخه ${release.tagName}",
+                            stringResource(R.string.version_fmt, release.tagName),
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                         )
@@ -390,7 +400,12 @@ private fun ReleaseCard(
                     }
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        "${apk.name}  •  ${humanSize(apk.size)}  •  $publishedAt",
+                        stringResource(
+                            R.string.release_meta_fmt,
+                            apk.name,
+                            humanSize(apk.size),
+                            publishedAt,
+                        ),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -419,7 +434,7 @@ private fun ReleaseCard(
             ) {
                 Icon(Icons.Filled.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("صفحه ریلیز", fontSize = 12.sp)
+                Text(stringResource(R.string.release_page), fontSize = 12.sp)
             }
         }
     }

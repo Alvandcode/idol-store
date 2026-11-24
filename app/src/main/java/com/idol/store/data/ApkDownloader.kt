@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import com.idol.store.R
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -48,7 +49,7 @@ object ApkDownloader {
                 val request = Request.Builder().url(url).build()
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
-                    val body = response.body ?: throw IOException("پاسخ خالی بود")
+                    val body = response.body ?: throw IOException(context.getString(R.string.err_empty_response))
                     val total = body.contentLength()
                     body.byteStream().use { input ->
                         FileOutputStream(file).use { output ->
@@ -75,7 +76,12 @@ object ApkDownloader {
 
                 _states.update { it + (key to DownloadState.Ready(file)) }
             } catch (e: Exception) {
-                _states.update { it + (key to DownloadState.Failed(e.message ?: "خطای ناشناخته")) }
+                _states.update {
+                    it + (key to DownloadState.Failed(
+                        e.message?.takeIf { m -> m.isNotBlank() }
+                            ?: context.getString(R.string.err_unknown)
+                    ))
+                }
             } finally {
                 synchronized(jobs) { jobs.remove(key) }
             }

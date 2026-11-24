@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.idol.store.BuildConfig
+import com.idol.store.R
 import com.idol.store.data.AuthManager
 import com.idol.store.data.DeviceFlowStart
 import com.idol.store.data.ExchangeResult
@@ -47,15 +48,15 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         verificationUri = null
         viewModelScope.launch {
             try {
-                val start = AuthManager.startDeviceFlow()
-                flow = start
-                deviceCode = start.userCode
-                verificationUri = start.verificationUri
+                val s = AuthManager.startDeviceFlow()
+                flow = s
+                deviceCode = s.userCode
+                verificationUri = s.verificationUri
                 busy = false
                 polling = true
-                pollLoop(start)
+                pollLoop(s)
             } catch (e: Exception) {
-                error = e.message
+                error = AppErrors.message(getApplication(), e)
             } finally {
                 busy = false
                 polling = false
@@ -80,17 +81,19 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 is ExchangeResult.Pending -> Unit
                 is ExchangeResult.SlowDown -> interval += 5
                 is ExchangeResult.Error -> {
-                    error = result.message
+                    error = result.message.ifBlank {
+                        getApplication<Application>().getString(R.string.err_exchange_token)
+                    }
                     return
                 }
             }
         }
-        error = "زمان اعتبار کد به پایان رسید — دوباره تلاش کنید"
+        error = getApplication<Application>().getString(R.string.login_code_expired)
     }
 
     fun loginWithToken(token: String) {
         if (token.isBlank()) {
-            error = "توکن را وارد کنید"
+            error = getApplication<Application>().getString(R.string.login_err_blank_token)
             return
         }
         busy = true
@@ -101,7 +104,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 AuthManager.saveSession(getApplication(), token.trim(), user.login)
                 loggedIn = true
             } catch (e: Exception) {
-                error = e.message
+                error = AppErrors.message(getApplication(), e)
             } finally {
                 busy = false
             }

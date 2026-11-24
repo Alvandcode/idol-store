@@ -18,6 +18,8 @@ import com.idol.store.data.GhAsset
 import com.idol.store.data.GhRelease
 import com.idol.store.data.GitHubService
 import com.idol.store.data.Installer
+import com.idol.store.data.StoreErrorKind
+import com.idol.store.data.StoreException
 import com.idol.store.data.StoreApp
 import com.idol.store.data.downloadKey
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -97,9 +99,19 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
                 val catalog = CatalogRepository.load(getApplication(), forceRefresh = true)
                 this@StoreViewModel.catalog = catalog
                 isAdmin = AdminAccess.isAllowed(catalog, currentLogin, BuildConfig.CATALOG_REPO)
+                // دفاع اصلی: تأیید دسترسی push از خود گیت‌هاب (نام کاربری قابل جعل نیست،
+                // چون از API گیت‌هاب با توکن واقعی گرفته می‌شود — ولی برای اطمینان کامل،
+                // فقط کسی ادمین است که گیت‌هاب دسترسی push او به ریپوی کاتالوگ را تأیید کند)
+                if (isAdmin) {
+                    isAdmin = try {
+                        gh.hasPushAccess(BuildConfig.CATALOG_REPO, currentLogin!!)
+                    } catch (_: Exception) {
+                        false
+                    }
+                }
                 loadReleases()
             } catch (e: Exception) {
-                error = e.message ?: "خطا در دریافت کاتالوگ"
+                error = AppErrors.message(getApplication(), e)
             } finally {
                 loading = false
             }
@@ -123,12 +135,12 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
             gate.withPermit {
                 try {
                     val repo = GitHubService.repoFromUrl(app.github)
-                        ?: throw IllegalArgumentException("آدرس گیت‌هاب نامعتبر است: ${app.github}")
+                        ?: throw StoreException(StoreErrorKind.INVALID_REPO_URL, app.github)
                     val releases = gh.stableReleases(repo)
-                    if (releases.isEmpty()) throw IllegalStateException("هیچ ریلیز پایداری منتشر نشده")
+                    if (releases.isEmpty()) throw StoreException(StoreErrorKind.NO_STABLE_RELEASE)
                     val latest = releases.first()
                     val apk = GitHubService.pickUniversalApk(latest.assets)
-                        ?: throw IllegalStateException("در آخرین ریلیز فایل APK یونیورسال نیست")
+                        ?: throw StoreException(StoreErrorKind.NO_UNIVERSAL_APK)
                     val starred = try { gh.isStarred(repo) } catch (_: Exception) { null }
                     val repoInfo = try { gh.repoDetails(repo) } catch (_: Exception) { null }
                     _content.update {
@@ -136,7 +148,9 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 } catch (e: Exception) {
                     _content.update {
-                        it + (app.id to AppContentState.Error(e.message ?: "خطای ناشناخته"))
+                        it + (app.id to AppContentState.Error(
+                            AppErrors.message(getApplication(), e)
+                        ))
                     }
                 }
             }

@@ -22,12 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.idol.store.R
 import com.idol.store.data.DownloadState
 import com.idol.store.data.StoreApp
 import com.idol.store.data.downloadKey
@@ -93,7 +95,7 @@ fun AppRow(
                     is AppContentState.Ready ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "نسخه ${state.releases.first().tagName}",
+                                stringResource(R.string.version_fmt, state.releases.first().tagName),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -103,7 +105,7 @@ fun AppRow(
                             }
                         }
                     is AppContentState.Loading -> Text(
-                        "در حال دریافت…",
+                        stringResource(R.string.fetching),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -142,7 +144,7 @@ fun InstalledBadge() {
         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
     ) {
         Text(
-            "نصب‌شده",
+            stringResource(R.string.installed),
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -163,7 +165,7 @@ fun DownloadButton(
             FilledTonalButton(
                 onClick = onDownload,
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-            ) { Text("دانلود") }
+            ) { Text(stringResource(R.string.download)) }
 
         is DownloadState.Downloading ->
             OutlinedButton(
@@ -175,20 +177,20 @@ fun DownloadButton(
                     strokeWidth = 2.dp,
                 )
                 Spacer(Modifier.width(6.dp))
-                Text("٪${state.progress}")
+                Text(stringResource(R.string.progress_fmt, state.progress))
             }
 
         is DownloadState.Ready ->
             Button(
                 onClick = onInstall,
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-            ) { Text("نصب") }
+            ) { Text(stringResource(R.string.install)) }
 
         is DownloadState.Failed ->
             OutlinedButton(
                 onClick = onDownload,
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-            ) { Text("تلاش مجدد") }
+            ) { Text(stringResource(R.string.retry)) }
     }
 }
 
@@ -201,7 +203,7 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            "خطا در دریافت اطلاعات",
+            stringResource(R.string.error_loading),
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp,
             textAlign = TextAlign.Center,
@@ -213,6 +215,6 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.size(16.dp))
-        Button(onClick = onRetry) { Text("تلاش مجدد") }
+        Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
     }
 }

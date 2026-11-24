@@ -2,8 +2,8 @@ package com.idol.store
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,10 +19,11 @@ import com.idol.store.ui.AuthViewModel
 import com.idol.store.ui.CategoryAppsScreen
 import com.idol.store.ui.IdolStoreTheme
 import com.idol.store.ui.LoginScreen
+import com.idol.store.ui.Prefs
 import com.idol.store.ui.StoreTabs
 import com.idol.store.ui.StoreViewModel
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private var loggedIn by mutableStateOf(false)
     /** وقتی از اعلان آپدیت می‌آییم: صفحه همان اپ باز شود */
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Prefs.loadTheme(this)
         loggedIn = AuthManager.hasToken(this)
         deepLinkAppId = intent?.getStringExtra(EXTRA_OPEN_APP_ID)
         UpdateChecker.ensureScheduled(this)
