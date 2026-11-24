@@ -57,7 +57,7 @@
 در `app/build.gradle.kts` این دو را با مقادیر خودت تنظیم کن:
 
 ```kotlin
-buildConfigField("String", "CATALOG_REPO", "\"USERNAME/idol-store-catalog\"")
+buildConfigField("String", "CATALOG_REPO", "\"Alvandcode/idol-store-catalog\"")
 buildConfigField("String", "CATALOG_PATH", "\"apps.json\"")
 ```
 
@@ -117,7 +117,7 @@ APK به **Releases** پیوست می‌شود. خود Idol Store هم می‌ت
 
 ```kotlin
 buildConfigField("String", "CATALOG_URL",
-    "\"https://raw.githubusercontent.com/USERNAME/idol-store-catalog/main/apps.json\"")
+    "\"https://raw.githubusercontent.com/Alvandcode/idol-store-catalog/main/apps.json\"")
 ```
 
 ### ۳. اپ‌ها را به کاتالوگ اضافه کن

@@ -18,18 +18,18 @@ android {
 
         // ⬇️ آدرس فهرست اپلیکیشن‌ها (کاتالوگ) را اینجا ست کنید.
         // یک ریپو جدا بسازید (مثلاً idol-store-catalog) و apps.json را داخلش بگذارید.
-        // تا وقتی USERNAME را عوض نکنید، اپ از کاتالوگ داخلی (assets) استفاده می‌کند.
+        // تا وقتی Alvandcode را عوض نکنید، اپ از کاتالوگ داخلی (assets) استفاده می‌کند.
         buildConfigField(
             "String",
             "CATALOG_URL",
-            "\"https://raw.githubusercontent.com/USERNAME/idol-store-catalog/main/apps.json\""
+            "\"https://raw.githubusercontent.com/Alvandcode/idol-store-catalog/main/apps.json\""
         )
         // ⬇️ برای ورود با کد دستگاه گیت‌هاب: یک OAuth App بساز (callback = http://localhost)
         // در github.com/settings/developers و Client ID آن را اینجا بگذار.
         // تا آن موقع، ورود با توکن شخصی (PAT) در دسترس است.
         buildConfigField("String", "GITHUB_CLIENT_ID", "\"\"")
         // ⬇️ ریپوی کاتالوگ برای پنل مدیریت (کامیت apps.json از داخل اپ)
-        buildConfigField("String", "CATALOG_REPO", "\"USERNAME/idol-store-catalog\"")
+        buildConfigField("String", "CATALOG_REPO", "\"Alvandcode/idol-store-catalog\"")
         buildConfigField("String", "CATALOG_PATH", "\"apps.json\"")
     }
 
