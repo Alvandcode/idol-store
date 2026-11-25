@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -124,48 +125,69 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                 is AppContentState.Ready -> {
                     val latest = s.releases.first()
 
-                    // هدر: آیکون + نام + توسعه‌دهنده + ستاره
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        AsyncImage(
-                            model = app.iconUrl,
-                            contentDescription = app.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(84.dp)
-                                .clip(RoundedCornerShape(20.dp)),
-                        )
-                        Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(app.name, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                app.developer ?: "—",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // هدر هیرو: پس‌زمینه گرادیانی + آیکون برند
+                    Column {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(HeaderGradient),
+                        ) {
+                            Box(
+                                Modifier
+                                    .align(Alignment.CenterStart)
+                                    .padding(start = 24.dp)
+                                    .size(90.dp)
+                                    .background(GlowGradient),
                             )
-                            if (installedVersion != null) {
-                                Spacer(Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    InstalledBadge()
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        stringResource(R.string.installed_version_fmt, installedVersion),
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
                         }
 
-                        // دکمه ستاره
-                        FilledTonalIconButton(onClick = { vm.toggleStar(app) }) {
-                            Icon(
-                                imageVector = if (s.starred == true) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                                contentDescription = stringResource(R.string.star),
-                                tint = if (s.starred == true)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                        // هدر: آیکون + نام + توسعه‌دهنده + ستاره
+                        Row(
+                            Modifier.padding(top = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            AppIcon(
+                                model = app.iconUrl,
+                                contentDescription = app.name,
+                                size = 84.dp,
+                                corner = 22.dp,
                             )
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(app.name, style = MaterialTheme.typography.headlineSmall, fontSize = 20.sp)
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    app.developer ?: "—",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                if (installedVersion != null) {
+                                    Spacer(Modifier.height(6.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        InstalledBadge()
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            stringResource(R.string.installed_version_fmt, installedVersion),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // دکمه ستاره
+                            FilledTonalIconButton(onClick = { vm.toggleStar(app) }) {
+                                Icon(
+                                    imageVector = if (s.starred == true) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                    contentDescription = stringResource(R.string.star),
+                                    tint = if (s.starred == true)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
 
@@ -352,7 +374,7 @@ private fun NotificationToggle(appId: String, latestTag: String) {
 private fun SectionTitle(text: String) {
     Text(
         text,
-        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.titleMedium,
         fontSize = 16.sp,
         modifier = Modifier.padding(bottom = 8.dp),
     )

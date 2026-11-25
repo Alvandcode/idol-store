@@ -54,6 +54,9 @@
 
     <string name="you_github_account">GitHub account</string>
     <string name="you_stats_fmt">%1$d apps in store • %2$d installed</string>
+    <string name="home_tagline">Trusted apps, straight from GitHub</string>
+    <string name="you_stats_apps">%1$d apps in store</string>
+    <string name="you_stats_installed">%1$d installed</string>
     <string name="you_installed_title">Installed on device</string>
     <string name="you_no_installed">You haven\'t installed anything yet.</string>
     <string name="settings_theme">Theme</string>

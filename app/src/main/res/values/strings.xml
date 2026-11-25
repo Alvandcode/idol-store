@@ -55,6 +55,9 @@
 
     <string name="you_github_account">حساب گیت‌هاب</string>
     <string name="you_stats_fmt">%1$d برنامه در استور • %2$d نصب‌شده</string>
+    <string name="home_tagline">اپ‌های مورد اعتماد، مستقیم از گیت‌هاب</string>
+    <string name="you_stats_apps">%1$d اپ در استور</string>
+    <string name="you_stats_installed">%1$d نصب‌شده</string>
     <string name="you_installed_title">نصب‌شده روی دستگاه</string>
     <string name="you_no_installed">هنوز برنامه‌ای نصب نکرده‌ای.</string>
     <string name="settings_theme">تم</string>

@@ -1,5 +1,7 @@
 package com.idol.store.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,16 +16,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -33,20 +41,22 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,7 +65,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -82,33 +96,36 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit) {
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = tab == 0, onClick = { tab = 0 },
-                    icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_store)) },
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+            ) {
+                val items = listOf(
+                    Icons.Filled.Home to stringResource(R.string.tab_store),
+                    Icons.Filled.Search to stringResource(R.string.tab_search),
+                    Icons.Filled.Category to stringResource(R.string.tab_categories),
+                    Icons.Filled.Person to stringResource(R.string.tab_you),
                 )
-                NavigationBarItem(
-                    selected = tab == 1, onClick = { tab = 1 },
-                    icon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_search)) },
-                )
-                NavigationBarItem(
-                    selected = tab == 2, onClick = { tab = 2 },
-                    icon = { Icon(Icons.Filled.Category, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_categories)) },
-                )
-                NavigationBarItem(
-                    selected = tab == 3, onClick = { tab = 3 },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_you)) },
-                )
+                items.forEachIndexed { i, (icon, label) ->
+                    NavigationBarItem(
+                        selected = tab == i,
+                        onClick = { tab = i },
+                        icon = { Icon(icon, contentDescription = null) },
+                        label = { Text(label, style = MaterialTheme.typography.labelMedium) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            indicatorColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    )
+                }
             }
         },
     ) { padding ->
         when (tab) {
-            0 -> HomeTab(vm, onLogout, Modifier.padding(padding), installTick)
+            0 -> HomeTab(vm, onLogout, Modifier.padding(padding), installTick, onGoToSearch = { tab = 1 })
             1 -> SearchTab(vm, Modifier.padding(padding))
             2 -> CategoriesTab(vm, Modifier.padding(padding))
             else -> YouTab(vm, onLogout, Modifier.padding(padding), installTick)
@@ -116,45 +133,122 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit) {
     }
 }
 
+/** آیکون برند (لوگوی اپ) در اندازه‌های کوچک */
+@Composable
+private fun BrandIcon(size: Int) {
+    androidx.compose.foundation.Image(
+        painter = painterResource(R.drawable.ic_logo),
+        contentDescription = null,
+        modifier = Modifier
+            .size(size.dp)
+            .clip(RoundedCornerShape((size * 0.26f).dp)),
+    )
+}
+
 // ---------------- استور (خانه) ----------------
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier, installTick: Int = 0) {
+private fun HomeTab(
+    vm: StoreViewModel,
+    onLogout: () -> Unit,
+    modifier: Modifier,
+    installTick: Int = 0,
+    onGoToSearch: () -> Unit,
+) {
     val contentMap by vm.content.collectAsState()
     var selectedCat by rememberSaveable { mutableStateOf("همه") }
     val categories = vm.catalog?.categories.orEmpty()
     val apps = vm.catalog?.apps.orEmpty()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_name), fontWeight = FontWeight.ExtraBold) },
-                actions = {
+    Box(modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            // هدر برند با گلو نئونی
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(HeaderGradient),
+            ) {
+                Box(
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(140.dp)
+                        .background(GlowGradient),
+                )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    BrandIcon(34)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontSize = 20.sp,
+                        )
+                        Text(
+                            stringResource(R.string.home_tagline),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     IconButton(onClick = { vm.refresh() }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.refresh))
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = stringResource(R.string.refresh),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     if (vm.isAdmin) {
                         IconButton(onClick = { vm.adminMode = true }) {
-                            Icon(Icons.Filled.AdminPanelSettings, contentDescription = stringResource(R.string.admin_panel))
+                            Icon(
+                                Icons.Filled.AdminPanelSettings,
+                                contentDescription = stringResource(R.string.admin_panel),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
                         }
                     }
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.Filled.Logout, contentDescription = stringResource(R.string.logout))
+                        Icon(
+                            Icons.Filled.Logout,
+                            contentDescription = stringResource(R.string.logout),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
-                },
-            )
-        },
-        modifier = modifier,
-    ) { inner ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(inner),
-        ) {
-            // چیپ‌های دسته‌بندی (مثل نوار بالای گوگل‌پلی)
+                }
+            }
+
+            // نوار جستجو به سبک گوگل‌پلی — کلیک → تب جستجو
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable(onClick = onGoToSearch)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        stringResource(R.string.search_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // چیپ‌های دسته‌بندی
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item {
@@ -162,6 +256,7 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
                         selected = selectedCat == "همه",
                         onClick = { selectedCat = "همه" },
                         label = { Text(stringResource(R.string.all_chip)) },
+                        colors = chipColors(),
                     )
                 }
                 items(categories) { cat ->
@@ -169,6 +264,7 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
                         selected = selectedCat == cat,
                         onClick = { selectedCat = cat },
                         label = { Text(cat) },
+                        colors = chipColors(),
                     )
                 }
             }
@@ -182,6 +278,7 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
 
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
                     if (selectedCat == "همه") {
+                        // کاروسل «به‌روزرسانی‌های اخیر» — سبک گوگل‌پلی
                         val recent = vm.recentApps
                         if (recent.isNotEmpty()) {
                             item {
@@ -190,8 +287,19 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
                                     showViewAll = recent.size > 4,
                                 ) { vm.openCategory = "__recent__" }
                             }
-                            items(recent.take(4), key = { "r_${it.id}" }) { app ->
-                                AppRowItem(vm, contentMap, app)
+                            item {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    items(recent.take(8), key = { "rc_${it.id}" }) { app ->
+                                        AppCardHorizontal(
+                                            app = app,
+                                            subtitle = app.developer ?: app.category ?: "—",
+                                            onClick = { vm.selectedApp = app },
+                                        )
+                                    }
+                                }
                             }
                         }
                         categories.forEach { cat ->
@@ -246,6 +354,12 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
 }
 
 @Composable
+private fun chipColors() = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = MaterialTheme.colorScheme.primary,
+    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+)
+
+@Composable
 private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentState>, app: StoreApp) {
     val states by vm.downloadStates.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
@@ -275,29 +389,6 @@ private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentSta
     )
 }
 
-@Composable
-private fun SectionHeader(title: String, showViewAll: Boolean, onViewAll: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
-        if (showViewAll) {
-            TextButton(onClick = onViewAll) {
-                Text(stringResource(R.string.view_all))
-                Spacer(Modifier.width(2.dp))
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-        }
-    }
-}
-
 // ---------------- جستجو ----------------
 
 @Composable
@@ -310,18 +401,35 @@ private fun SearchTab(vm: StoreViewModel, modifier: Modifier) {
             onValueChange = { vm.query = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            placeholder = { Text(stringResource(R.string.search_hint)) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            placeholder = {
+                Text(
+                    stringResource(R.string.search_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            leadingIcon = {
+                Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(20.dp))
+            },
             trailingIcon = {
                 if (vm.query.isNotEmpty()) {
                     IconButton(onClick = { vm.query = "" }) {
-                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_clear))
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.search_clear),
+                            modifier = Modifier.size(18.dp),
+                        )
                     }
                 }
             },
             singleLine = true,
-            shape = RoundedCornerShape(16.dp),
+            shape = CircleShape,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                unfocusedBorderColor = Color.Transparent,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+            ),
         )
 
         if (vm.loading) {
@@ -347,9 +455,18 @@ private fun SearchTab(vm: StoreViewModel, modifier: Modifier) {
     }
 }
 
-// ---------------- دسته‌ها ----------------
+// ---------------- دسته‌ها (گرید گرادیانی) ----------------
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** پالت‌های گرادیان برای کاشی‌های دسته‌بندی */
+private val CategoryPalettes = listOf(
+    listOf(Color(0xFF0EA5E9), Color(0xFF6366F1)),
+    listOf(Color(0xFF8B5CF6), Color(0xFFEC4899)),
+    listOf(Color(0xFF10B981), Color(0xFF0EA5E9)),
+    listOf(Color(0xFFF59E0B), Color(0xFFEF4444)),
+    listOf(Color(0xFF22D3EE), Color(0xFF3B82F6)),
+    listOf(Color(0xFFF472B6), Color(0xFF8B5CF6)),
+)
+
 @Composable
 private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
     val categories = vm.catalog?.categories.orEmpty()
@@ -358,9 +475,8 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
     Column(modifier.fillMaxSize()) {
         Text(
             stringResource(R.string.categories_title),
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         )
         if (categories.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -371,32 +487,46 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
                 )
             }
         } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(16.dp),
             ) {
                 items(categories) { cat ->
                     val count = apps.count { it.category == cat }
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { vm.openCategory = cat },
+                    val palette = CategoryPalettes[
+                        kotlin.math.abs(cat.hashCode()) % CategoryPalettes.size
+                    ]
+                    Box(
+                        Modifier
+                            .height(96.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(Brush.linearGradient(palette))
+                            .clickable { vm.openCategory = cat }
+                            .padding(14.dp),
                     ) {
-                        Row(
-                            Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Filled.Category, contentDescription = null)
-                            Spacer(Modifier.width(12.dp))
-                            Text(cat, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Column(Modifier.align(Alignment.BottomStart)) {
+                            Text(
+                                cat,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White,
+                                maxLines = 1,
+                            )
                             Text(
                                 stringResource(R.string.apps_count_fmt, count),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 13.sp,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.85f),
                             )
                         }
+                        Icon(
+                            Icons.Filled.Category,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(24.dp),
+                        )
                     }
                 }
             }
@@ -415,100 +545,174 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier,
     var themeMode by rememberSaveable { mutableStateOf(Prefs.themeMode.name) }
 
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        // بنر پروفایل گرادیانی
         item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier
+            Box(
+                Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .background(HeaderGradient),
             ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.you_github_account),
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        vm.currentLogin ?: "—",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        stringResource(R.string.you_stats_fmt, apps.size, installed.size),
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Button(onClick = onLogout) { Text(stringResource(R.string.logout_account)) }
+                Box(
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(140.dp)
+                        .background(GlowGradient),
+                )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // آواتار دایره‌ای با حرف اول
+                    Box(
+                        Modifier
+                            .size(54.dp)
+                            .clip(CircleShape)
+                            .background(BrandGradient),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            (vm.currentLogin ?: "I").take(1).uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                        )
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.you_github_account),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            vm.currentLogin ?: "—",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 18.sp,
+                        )
+                    }
                 }
+            }
+        }
+
+        // چیپ‌های آمار
+        item {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StatChip(stringResource(R.string.you_stats_apps, apps.size))
+                StatChip(stringResource(R.string.you_stats_installed, installed.size))
             }
         }
 
         // تنظیمات تم
         item {
-            Text(
-                stringResource(R.string.settings_theme),
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
-            val options = listOf(
-                ThemeMode.DARK to stringResource(R.string.theme_dark),
-                ThemeMode.LIGHT to stringResource(R.string.theme_light),
-                ThemeMode.SYSTEM to stringResource(R.string.theme_system),
-            )
-            SingleChoiceSegmentedButtonRow(
+            Column(
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(16.dp),
             ) {
-                options.forEachIndexed { index, (mode, label) ->
-                    SegmentedButton(
-                        selected = themeMode == mode.name,
-                        onClick = {
-                            themeMode = mode.name
-                            Prefs.setTheme(context, mode)
-                        },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                    ) { Text(label, fontSize = 13.sp) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.DarkMode,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        stringResource(R.string.settings_theme),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                val options = listOf(
+                    ThemeMode.DARK to stringResource(R.string.theme_dark),
+                    ThemeMode.LIGHT to stringResource(R.string.theme_light),
+                    ThemeMode.SYSTEM to stringResource(R.string.theme_system),
+                )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    options.forEachIndexed { index, (mode, label) ->
+                        SegmentedButton(
+                            selected = themeMode == mode.name,
+                            onClick = {
+                                themeMode = mode.name
+                                Prefs.setTheme(context, mode)
+                            },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                        ) { Text(label, style = MaterialTheme.typography.labelMedium) }
+                    }
                 }
             }
         }
 
         // تنظیمات زبان
         item {
-            Text(
-                stringResource(R.string.settings_language),
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 6.dp),
-            )
-            Row(
-                Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(16.dp),
             ) {
-                OutlinedButton(onClick = {
-                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
-                        androidx.core.os.LocaleListCompat.forLanguageTags("fa")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.Language,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
                     )
-                }) { Text(stringResource(R.string.lang_fa)) }
-                OutlinedButton(onClick = {
-                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
-                        androidx.core.os.LocaleListCompat.forLanguageTags("en")
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        stringResource(R.string.settings_language),
+                        style = MaterialTheme.typography.titleMedium,
                     )
-                }) { Text(stringResource(R.string.lang_en)) }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = {
+                        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                            androidx.core.os.LocaleListCompat.forLanguageTags("fa")
+                        )
+                    }) { Text(stringResource(R.string.lang_fa)) }
+                    OutlinedButton(onClick = {
+                        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                            androidx.core.os.LocaleListCompat.forLanguageTags("en")
+                        )
+                    }) { Text(stringResource(R.string.lang_en)) }
+                }
             }
         }
 
+        // خروج
         item {
-            Text(
-                stringResource(R.string.you_installed_title),
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+            Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                Button(
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
+                    Icon(Icons.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.logout_account))
+                }
+            }
+        }
+
+        // اپ‌های نصب‌شده
+        item {
+            SectionHeader(stringResource(R.string.you_installed_title))
         }
         if (installed.isEmpty()) {
             item {
@@ -544,9 +748,10 @@ fun CategoryAppsScreen(vm: StoreViewModel, key: String, onBack: () -> Unit) {
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text(title, fontWeight = FontWeight.Bold) },
+            androidx.compose.material3.TopAppBar(
+                title = { Text(title, style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))

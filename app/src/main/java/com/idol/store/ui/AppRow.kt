@@ -1,16 +1,20 @@
 package com.idol.store.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
@@ -20,15 +24,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.idol.store.R
 import com.idol.store.data.DownloadState
 import com.idol.store.data.StoreApp
@@ -56,7 +57,7 @@ fun installStatusOf(installedVersion: Int?, latestTag: String?): InstallStatus =
     else -> InstallStatus.UPDATE_AVAILABLE
 }
 
-/** ردیف اپ به سبک گوگل‌پلی: آیکون + نام + توضیح دوخطی + چیپ‌ها + دکمه دانلود */
+/** ردیف اپ به سبک گوگل‌پلی: آیکون + نام + توضیح + متا + دکمه */
 @Composable
 fun AppRow(
     app: StoreApp,
@@ -70,92 +71,90 @@ fun AppRow(
     showButton: Boolean = true,
     installStatus: InstallStatus = InstallStatus.NOT_INSTALLED,
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier
+    Row(
+        Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AsyncImage(
-                model = app.iconUrl,
-                contentDescription = app.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-            )
+        AppIcon(
+            model = app.iconUrl,
+            contentDescription = app.name,
+            size = 58.dp,
+        )
 
-            Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(14.dp))
 
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        app.name,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (installedVersion != null) {
-                        Spacer(Modifier.width(6.dp))
-                        InstalledBadge()
-                    }
-                }
-                val desc = app.description ?: app.developer ?: "—"
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    desc,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    app.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    lineHeight = 18.sp,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-                when (state) {
-                    is AppContentState.Ready ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                stringResource(R.string.version_fmt, state.releases.first().tagName),
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            if (state.starred == true) {
-                                Spacer(Modifier.width(8.dp))
-                                Text("★", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    is AppContentState.Loading -> Text(
-                        stringResource(R.string.fetching),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    is AppContentState.Error -> Text(
-                        state.message,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.error,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                if (installedVersion != null) {
+                    Spacer(Modifier.width(8.dp))
+                    InstalledBadge()
                 }
             }
+            Spacer(Modifier.height(2.dp))
+            val desc = app.description ?: app.developer ?: "—"
+            Text(
+                desc,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(3.dp))
+            when (state) {
+                is AppContentState.Ready ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.version_fmt, state.releases.first().tagName),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (state.starred == true) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "★",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                is AppContentState.Loading -> Text(
+                    stringResource(R.string.fetching),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                is AppContentState.Error -> Text(
+                    state.message,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.error,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
 
-            if (showButton) {
-                Spacer(Modifier.width(8.dp))
-                when (state) {
-                    is AppContentState.Ready -> DownloadButton(
-                        state = downloadState,
-                        installStatus = installStatus,
-                        onDownload = onDownload,
-                        onCancel = onCancel,
-                        onInstall = onInstall,
-                    )
-                    is AppContentState.Loading ->
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    is AppContentState.Error -> Unit
-                }
+        if (showButton) {
+            Spacer(Modifier.width(10.dp))
+            when (state) {
+                is AppContentState.Ready -> DownloadButton(
+                    state = downloadState,
+                    installStatus = installStatus,
+                    onDownload = onDownload,
+                    onCancel = onCancel,
+                    onInstall = onInstall,
+                )
+                is AppContentState.Loading ->
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                is AppContentState.Error -> Unit
             }
         }
     }
@@ -165,7 +164,7 @@ fun AppRow(
 fun InstalledBadge() {
     Surface(
         shape = RoundedCornerShape(6.dp),
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
     ) {
         Text(
             stringResource(R.string.installed),
@@ -176,6 +175,9 @@ fun InstalledBadge() {
         )
     }
 }
+
+/** دکمه‌های فشرده نوار اپ — ارتفاع کم و شکل گرد */
+private val CompactButtonPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
 
 @Composable
 fun DownloadButton(
@@ -192,48 +194,57 @@ fun DownloadButton(
                 OutlinedButton(
                     enabled = false,
                     onClick = {},
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                ) { Text(stringResource(R.string.btn_installed)) }
+                    contentPadding = CompactButtonPadding,
+                    modifier = Modifier.heightIn(min = 34.dp),
+                ) { Text(stringResource(R.string.btn_installed), style = MaterialTheme.typography.labelMedium) }
 
             // نصب است اما قدیمی → دکمه به‌روزرسانی
             InstallStatus.UPDATE_AVAILABLE ->
                 Button(
                     onClick = onDownload,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                ) { Text(stringResource(R.string.btn_update)) }
+                    contentPadding = CompactButtonPadding,
+                    modifier = Modifier.heightIn(min = 34.dp),
+                ) { Text(stringResource(R.string.btn_update), style = MaterialTheme.typography.labelMedium) }
 
             // نصب نیست → دکمه دانلود
             InstallStatus.NOT_INSTALLED ->
                 FilledTonalButton(
                     onClick = onDownload,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                ) { Text(stringResource(R.string.download)) }
+                    contentPadding = CompactButtonPadding,
+                    modifier = Modifier.heightIn(min = 34.dp),
+                ) { Text(stringResource(R.string.download), style = MaterialTheme.typography.labelMedium) }
         }
 
         is DownloadState.Downloading ->
             OutlinedButton(
                 onClick = onCancel,
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                contentPadding = CompactButtonPadding,
+                modifier = Modifier.heightIn(min = 34.dp),
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(14.dp),
                     strokeWidth = 2.dp,
                 )
                 Spacer(Modifier.width(6.dp))
-                Text(stringResource(R.string.progress_fmt, state.progress))
+                Text(
+                    stringResource(R.string.progress_fmt, state.progress),
+                    style = MaterialTheme.typography.labelMedium,
+                )
             }
 
         is DownloadState.Ready ->
             Button(
                 onClick = onInstall,
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-            ) { Text(stringResource(R.string.install)) }
+                contentPadding = CompactButtonPadding,
+                modifier = Modifier.heightIn(min = 34.dp),
+            ) { Text(stringResource(R.string.install), style = MaterialTheme.typography.labelMedium) }
 
         is DownloadState.Failed ->
             OutlinedButton(
                 onClick = onDownload,
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-            ) { Text(stringResource(R.string.retry)) }
+                contentPadding = CompactButtonPadding,
+                modifier = Modifier.heightIn(min = 34.dp),
+            ) { Text(stringResource(R.string.retry), style = MaterialTheme.typography.labelMedium) }
     }
 }
 
@@ -247,17 +258,55 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
     ) {
         Text(
             stringResource(R.string.error_loading),
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
+            style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             message,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(16.dp))
-        Button(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+        Spacer(Modifier.height(16.dp))
+        Button(
+            onClick = onRetry,
+            modifier = Modifier.heightIn(min = 42.dp),
+        ) { Text(stringResource(R.string.retry)) }
+    }
+}
+
+/** کارت اپ برای کاروسل افقی صفحه اصلی — سبک گوگل‌پلی */
+@Composable
+fun AppCardHorizontal(
+    app: StoreApp,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    Column(
+        Modifier
+            .width(120.dp)
+            .clickable(onClick = onClick),
+    ) {
+        AppIcon(
+            model = app.iconUrl,
+            contentDescription = app.name,
+            size = 96.dp,
+            corner = 24.dp,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            app.name,
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
