@@ -139,16 +139,6 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
             message = ctx.getString(R.string.admin_no_token)
             return
         }
-        // دفاع نهایی قبل از هر کامیت: تأیید مستقیم از گیت‌هاب
-        val verified = try {
-            gh.hasPushAccess(BuildConfig.CATALOG_REPO, login ?: "")
-        } catch (_: Exception) {
-            false
-        }
-        if (!verified) {
-            message = ctx.getString(R.string.admin_publish_denied_gh)
-            return
-        }
         // دفاع دوم: دسترسی را همین‌جا هم چک می‌کنیم (مهم‌ترین حفاظ، خود گیت‌هاب است)
         if (!AdminAccess.isAllowed(
                 Catalog(apps = apps, admins = admins.split(",").map { it.trim() }.filter { it.isNotEmpty() }),
@@ -163,7 +153,19 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         saving = true
         message = null
         viewModelScope.launch {
-            try {                val catalog = Catalog(
+            try {
+                // دفاع نهایی قبل از هر کامیت: تأیید مستقیم از گیت‌هاب
+                val verified = try {
+                    gh.hasPushAccess(BuildConfig.CATALOG_REPO, login ?: "")
+                } catch (_: Exception) {
+                    false
+                }
+                if (!verified) {
+                    message = ctx.getString(R.string.admin_publish_denied_gh)
+                    return@launch
+                }
+
+                val catalog = Catalog(
                     apps = apps,
                     admins = admins.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                     categories = categories.split(",").map { it.trim() }.filter { it.isNotEmpty() },

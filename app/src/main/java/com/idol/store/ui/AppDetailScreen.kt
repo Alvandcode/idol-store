@@ -3,6 +3,7 @@ package com.idol.store.ui
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
@@ -64,12 +65,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.idol.store.R
-import com.idol.store.data.AppContentState
 import com.idol.store.data.DownloadState
 import com.idol.store.data.GhAsset
 import com.idol.store.data.GhRelease
 import com.idol.store.data.GitHubService
 import com.idol.store.data.StoreApp
+import com.idol.store.data.SecurityResult
 import com.idol.store.data.UpdatePrefs
 import com.idol.store.data.downloadKey
 import com.idol.store.data.humanSize
@@ -80,6 +81,7 @@ import com.idol.store.data.shortDate
 fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
     val states by vm.downloadStates.collectAsState()
     val contentMap by vm.content.collectAsState()
+    val securityMap by vm.securityStates.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
     val installedVersion = vm.installedVersionCode(app.packageName)
     val context = LocalContext.current
@@ -124,6 +126,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
 
                 is AppContentState.Ready -> {
                     val latest = s.releases.first()
+                    val security = securityMap[app.id]?.takeIf { it.release?.tag == latest.tagName }
 
                     // هدر: آیکون + نام + توسعه‌دهنده + ستاره
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -171,6 +174,10 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                     }
 
                     Spacer(Modifier.height(14.dp))
+
+                    // وضعیت امنیتی نسخه فعلی
+                    SecurityStatusCard(report = security, latestTag = latest.tagName, apkAssetName = s.universalApk.name)
+                    Spacer(Modifier.height(12.dp))
 
                     // اعلان بروزرسانی این اپ
                     NotificationToggle(
@@ -241,7 +248,13 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                         installed = installedVersion != null &&
                             installedVersion >= versionCodeFromTag(latest.tagName),
                         downloadState = states[downloadKey(app.id, latest.tagName)] ?: DownloadState.Idle,
-                        onDownload = { vm.download(app, latest.tagName, s.universalApk) },
+                        onDownload = {
+                            if (vm.canDownload(app.id, latest.tagName, s.universalApk.name)) {
+                                vm.download(app, latest.tagName, s.universalApk)
+                            } else {
+                                Toast.makeText(context, "این فایل در اسکن امنیتی به‌عنوان مخرب شناسایی شده و دانلود آن مسدود شد.", Toast.LENGTH_LONG).show()
+                            }
+                        },
                         onCancel = { vm.cancel(downloadKey(app.id, latest.tagName)) },
                         onInstall = {
                             val key = downloadKey(app.id, latest.tagName)
@@ -282,6 +295,50 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                     Spacer(Modifier.height(24.dp))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SecurityStatusCard(report: SecurityResult?, latestTag: String, apkAssetName: String) {
+    val status = report?.status ?: "not_scanned"
+    val tint = when (status) {
+        "no_detection" -> MaterialTheme.colorScheme.primary
+        "warning", "incomplete" -> MaterialTheme.colorScheme.tertiary
+        "dangerous" -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.secondary
+    }
+    val title = when (status) {
+        "no_detection" -> "تهدیدی توسط اسکنرها شناسایی نشد"
+        "warning" -> "آسیب‌پذیری در وابستگی‌های پروژه گزارش شده"
+        "dangerous" -> "تهدید امنیتی شناسایی شد"
+        "incomplete" -> "اسکن امنیتی کامل نشده است"
+        "no_stable_release" -> "نسخه پایدار برای اسکن پیدا نشد"
+        "scan_error" -> "اسکن با خطا مواجه شده است"
+        else -> "هنوز گزارشی برای این نسخه ثبت نشده"
+    }
+    val sourceStatus = report?.source?.status ?: "نامشخص"
+    val dependencyStatus = report?.source?.dependencyAudit?.status ?: "نامشخص"
+    val apkHash = report?.assets?.firstOrNull { it.name == apkAssetName }?.sha256
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = tint.copy(alpha = 0.10f)),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text("بررسی امنیتی Idol", fontWeight = FontWeight.Bold)
+            Text(title, color = tint, fontWeight = FontWeight.SemiBold)
+            Text("نسخه فعلی: $latestTag", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            if (report != null) {
+                Text("اسکن سورس‌کد: $sourceStatus", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text("بررسی آسیب‌پذیری وابستگی‌ها: $dependencyStatus", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                report.scannedAt?.let { Text("زمان اسکن: $it", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp) }
+                apkHash?.let { Text("SHA-256 فایل APK: " + it.take(20) + "…", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp) }
+            }
+            Text("نتیجه بدون شناسایی، تضمین صددرصدی بی‌خطر بودن فایل نیست.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
         }
     }
 }

@@ -21,6 +21,8 @@ import com.idol.store.data.Installer
 import com.idol.store.data.StoreErrorKind
 import com.idol.store.data.StoreException
 import com.idol.store.data.StoreApp
+import com.idol.store.data.SecurityRepository
+import com.idol.store.data.SecurityResult
 import com.idol.store.data.downloadKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -72,6 +74,9 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
     private val _content = MutableStateFlow<Map<String, AppContentState>>(emptyMap())
     val content: StateFlow<Map<String, AppContentState>> = _content.asStateFlow()
 
+    private val _security = MutableStateFlow<Map<String, SecurityResult>>(emptyMap())
+    val securityStates: StateFlow<Map<String, SecurityResult>> = _security.asStateFlow()
+
     private val gate = Semaphore(6)
 
     init {
@@ -98,6 +103,11 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
 
                 val catalog = CatalogRepository.load(getApplication(), forceRefresh = true)
                 this@StoreViewModel.catalog = catalog
+                _security.value = try {
+                    SecurityRepository.load().associateBy { it.id }
+                } catch (_: Exception) {
+                    emptyMap()
+                }
                 isAdmin = AdminAccess.isAllowed(catalog, currentLogin, BuildConfig.CATALOG_REPO)
                 // دفاع اصلی: تأیید دسترسی push از خود گیت‌هاب (نام کاربری قابل جعل نیست،
                 // چون از API گیت‌هاب با توکن واقعی گرفته می‌شود — ولی برای اطمینان کامل،
@@ -169,6 +179,14 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    /** Only a report for the exact release tag is considered current. */
+    fun canDownload(appId: String, tag: String, assetName: String): Boolean {
+        val report = _security.value[appId] ?: return true
+        if (report.release?.tag != tag) return true
+        if (report.status == "dangerous") return false
+        return report.assets.firstOrNull { it.name == assetName }?.status != "malware_detected"
     }
 
     fun download(app: StoreApp, tag: String, asset: GhAsset) {
