@@ -34,6 +34,28 @@ import com.idol.store.data.DownloadState
 import com.idol.store.data.StoreApp
 import com.idol.store.data.downloadKey
 
+/** وضعیت نصب اپ روی دستگاه، برای تعیین دکمه */
+enum class InstallStatus {
+    /** نصب نیست → دکمه دانلود */
+    NOT_INSTALLED,
+    /** نصب است و جدیدترین نسخه است → دکمه غیرفعال «نصب شده» */
+    UP_TO_DATE,
+    /** نصب است اما نسخه قدیمی‌تر از آخرین ریلیز است → دکمه «به‌روزرسانی» */
+    UPDATE_AVAILABLE,
+}
+
+/** استخراج versionCode عددی از تگ برای مقایسه با نسخه نصب‌شده */
+fun versionCodeFromTag(tag: String): Int =
+    Regex("(\\d+)").find(tag.replace(".", " "))?.groupValues?.get(1)?.toIntOrNull() ?: 0
+
+/** محاسبه وضعیت نصب از روی versionCode نصب‌شده و تگ آخرین ریلیز */
+fun installStatusOf(installedVersion: Int?, latestTag: String?): InstallStatus = when {
+    installedVersion == null -> InstallStatus.NOT_INSTALLED
+    latestTag == null -> InstallStatus.UP_TO_DATE
+    installedVersion >= versionCodeFromTag(latestTag) -> InstallStatus.UP_TO_DATE
+    else -> InstallStatus.UPDATE_AVAILABLE
+}
+
 /** ردیف اپ به سبک گوگل‌پلی: آیکون + نام + توضیح دوخطی + چیپ‌ها + دکمه دانلود */
 @Composable
 fun AppRow(
@@ -46,6 +68,7 @@ fun AppRow(
     onCancel: () -> Unit,
     onInstall: () -> Unit,
     showButton: Boolean = true,
+    installStatus: InstallStatus = InstallStatus.NOT_INSTALLED,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -124,6 +147,7 @@ fun AppRow(
                 when (state) {
                     is AppContentState.Ready -> DownloadButton(
                         state = downloadState,
+                        installStatus = installStatus,
                         onDownload = onDownload,
                         onCancel = onCancel,
                         onInstall = onInstall,
@@ -156,16 +180,35 @@ fun InstalledBadge() {
 @Composable
 fun DownloadButton(
     state: DownloadState,
+    installStatus: InstallStatus = InstallStatus.NOT_INSTALLED,
     onDownload: () -> Unit,
     onCancel: () -> Unit,
     onInstall: () -> Unit,
 ) {
     when (state) {
-        is DownloadState.Idle ->
-            FilledTonalButton(
-                onClick = onDownload,
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-            ) { Text(stringResource(R.string.download)) }
+        is DownloadState.Idle -> when (installStatus) {
+            // نصب است و جدیدترین نسخه → نیازی به نصب مجدد نیست
+            InstallStatus.UP_TO_DATE ->
+                OutlinedButton(
+                    enabled = false,
+                    onClick = {},
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                ) { Text(stringResource(R.string.btn_installed)) }
+
+            // نصب است اما قدیمی → دکمه به‌روزرسانی
+            InstallStatus.UPDATE_AVAILABLE ->
+                Button(
+                    onClick = onDownload,
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                ) { Text(stringResource(R.string.btn_update)) }
+
+            // نصب نیست → دکمه دانلود
+            InstallStatus.NOT_INSTALLED ->
+                FilledTonalButton(
+                    onClick = onDownload,
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                ) { Text(stringResource(R.string.download)) }
+        }
 
         is DownloadState.Downloading ->
             OutlinedButton(

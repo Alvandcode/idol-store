@@ -43,6 +43,83 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
     var admins by mutableStateOf("")
     var categories by mutableStateOf("")
 
+    /** نتیجه «دریافت خودکار از گیت‌هاب»: اپ پیش‌پرشده */
+    var fetchedApp by mutableStateOf<StoreApp?>(null)
+        private set
+    /** آخرین نسخه پایدار ریپویی که دریافت خودکار شد (برای نمایش) */
+    var fetchedLatestTag by mutableStateOf<String?>(null)
+        private set
+    var fetching by mutableStateOf(false)
+        private set
+    var fetchError by mutableStateOf<String?>(null)
+        private set
+
+    /** لیست دسته‌ها به‌صورت تمیز از رشته کاما-جدا */
+    fun categoryList(): List<String> =
+        categories.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
+    fun addCategory(name: String) {
+        val n = name.trim()
+        if (n.isEmpty() || categoryList().any { it.equals(n, ignoreCase = true) }) return
+        categories = (categoryList() + n).joinToString(", ")
+    }
+
+    fun removeCategory(name: String) {
+        categories = categoryList().filterNot { it.equals(name, ignoreCase = true) }.joinToString(", ")
+    }
+
+    /** دریافت خودکار اطلاعات پروژه از گیت‌هاب: نام، توضیح، سازنده، آیکون، وب‌سایت، آخرین نسخه */
+    fun autoFill(raw: String) {
+        val ctx = getApplication<Application>()
+        val repo = GitHubService.repoFromUrl(raw)
+        if (repo == null) {
+            fetchError = ctx.getString(R.string.form_err_github)
+            return
+        }
+        if (fetching) return
+        fetching = true
+        fetchError = null
+        viewModelScope.launch {
+            try {
+                val info = gh.repoDetails(repo)
+                val latest = try {
+                    gh.stableReleases(repo).firstOrNull()
+                } catch (_: Exception) {
+                    null // ریپو هنوز ریلیز ندارد؛ بقیه اطلاعات را می‌گیریم
+                }
+                fetchedApp = StoreApp(
+                    id = repo.substringAfter('/').lowercase(),
+                    name = info.name ?: repo.substringAfter('/'),
+                    developer = info.owner?.login ?: repo.substringBefore('/'),
+                    description = info.description,
+                    iconUrl = info.owner?.avatarUrl,
+                    github = repo,
+                    website = info.homepage?.takeIf { it.isNotBlank() },
+                )
+                fetchedLatestTag = latest?.tagName
+            } catch (e: Exception) {
+                fetchError = AppErrors.message(ctx, e)
+            } finally {
+                fetching = false
+            }
+        }
+    }
+
+    /** بعد از اعمال نتیجه در فرم، برای جلوگیری از پرشدن مجدد، پاک می‌شود (تگ برای نمایش می‌ماند) */
+    fun consumeFetched() {
+        fetchedApp = null
+        fetchError = null
+    }
+
+    /** آخرین نسخه نمایشی را هم پاک می‌کند (هنگام بستن فرم) */
+    fun clearLatestTag() {
+        fetchedLatestTag = null
+    }
+
+    fun clearFetchError() {
+        fetchError = null
+    }
+
     /** null = صفحه لیست؛ StoreApp = در حال ویرایش آن اپ */
     var editing by mutableStateOf<StoreApp?>(null)
         private set
@@ -108,6 +185,8 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
     fun closeEditor() {
         editing = null
         editingNew = false
+        consumeFetched()
+        clearLatestTag()
     }
 
     /** ذخیره اپ در لیست محلی (هنوز منتشر نشده) */
@@ -139,31 +218,37 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
             message = ctx.getString(R.string.admin_no_token)
             return
         }
-        // دفاع نهایی قبل از هر کامیت: تأیید مستقیم از گیت‌هاب
-        val verified = try {
-            gh.hasPushAccess(BuildConfig.CATALOG_REPO, login ?: "")
-        } catch (_: Exception) {
-            false
-        }
-        if (!verified) {
-            message = ctx.getString(R.string.admin_publish_denied_gh)
-            return
-        }
-        // دفاع دوم: دسترسی را همین‌جا هم چک می‌کنیم (مهم‌ترین حفاظ، خود گیت‌هاب است)
-        if (!AdminAccess.isAllowed(
-                Catalog(apps = apps, admins = admins.split(",").map { it.trim() }.filter { it.isNotEmpty() }),
-                login,
-                BuildConfig.CATALOG_REPO,
-            )
-        ) {
-            message = ctx.getString(R.string.admin_publish_denied)
-            return
-        }
-
+        // دفاع نهایی قبل از هر کامیت: تأیید مستقیم از گیت‌هاب (درون کوروتین)
         saving = true
         message = null
         viewModelScope.launch {
-            try {                val catalog = Catalog(
+            try {
+                val verified = try {
+                    gh.hasPushAccess(BuildConfig.CATALOG_REPO, login ?: "")
+                } catch (_: Exception) {
+                    false
+                }
+                if (!verified) {
+                    message = ctx.getString(R.string.admin_publish_denied_gh)
+                    return@launch
+                }
+
+                // دفاع دوم: دسترسی را همین‌جا هم چک می‌کنیم (مهم‌ترین حفاظ، خود گیت‌هاب است)
+                if (!AdminAccess.isAllowed(
+                        Catalog(
+                            apps = apps,
+                            admins = admins.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+                            categories = categories.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+                        ),
+                        login,
+                        BuildConfig.CATALOG_REPO,
+                    )
+                ) {
+                    message = ctx.getString(R.string.admin_publish_denied)
+                    return@launch
+                }
+
+                val catalog = Catalog(
                     apps = apps,
                     admins = admins.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                     categories = categories.split(",").map { it.trim() }.filter { it.isNotEmpty() },

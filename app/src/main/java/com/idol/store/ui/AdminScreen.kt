@@ -1,5 +1,6 @@
 package com.idol.store.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +26,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
@@ -202,13 +205,7 @@ private fun AdminList(vm: AdminViewModel) {
                 fontSize = 14.sp,
             )
             Spacer(Modifier.height(6.dp))
-            OutlinedTextField(
-                value = vm.categories,
-                onValueChange = { vm.categories = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Tools, Media, Security") },
-                singleLine = true,
-            )
+            CategoryEditor(vm)
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = { vm.publish() },
@@ -256,6 +253,64 @@ private fun AdminTextField(label: String, value: String, onChange: (String) -> U
     )
 }
 
+/** مدیریت دسته‌ها با چیپ: افزودن با دکمه، حذف با ✕ */
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun CategoryEditor(vm: AdminViewModel) {
+    var newCat by remember { mutableStateOf("") }
+    val cats = vm.categoryList()
+
+    Column {
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (cats.isEmpty()) {
+                Text(
+                    stringResource(R.string.no_categories_yet),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                )
+            }
+            cats.forEach { cat ->
+                androidx.compose.material3.InputChip(
+                    selected = false,
+                    onClick = {},
+                    label = { Text(cat) },
+                    trailingIcon = {
+                        androidx.compose.material3.Text(
+                            "✕",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .clickable { vm.removeCategory(cat) }
+                                .padding(start = 6.dp, top = 4.dp, bottom = 4.dp, end = 2.dp),
+                        )
+                    },
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = newCat,
+                onValueChange = { newCat = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text(stringResource(R.string.cat_add_hint)) },
+                singleLine = true,
+            )
+            Spacer(Modifier.width(8.dp))
+            FilledTonalButton(
+                onClick = {
+                    vm.addCategory(newCat)
+                    newCat = ""
+                },
+                enabled = newCat.isNotBlank(),
+            ) { Text(stringResource(R.string.cat_add_btn)) }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AppForm(vm: AdminViewModel) {
     val editing = vm.editing!!
@@ -271,6 +326,23 @@ private fun AppForm(vm: AdminViewModel) {
     var email by rememberSaveable { mutableStateOf(editing.email ?: "") }
     var telegram by rememberSaveable { mutableStateOf(editing.telegram ?: "") }
     var formError by remember { mutableStateOf<String?>(null) }
+    var quickUrl by remember { mutableStateOf("") }
+    var catMenuOpen by remember { mutableStateOf(false) }
+
+    // اعمال نتیجه «دریافت خودکار» روی فیلدها
+    androidx.compose.runtime.LaunchedEffect(vm.fetchedApp) {
+        vm.fetchedApp?.let { a ->
+            id = a.id
+            name = a.name
+            developer = a.developer ?: ""
+            description = a.description ?: ""
+            iconUrl = a.iconUrl ?: ""
+            github = a.github
+            website = a.website ?: ""
+            vm.consumeFetched()
+            formError = null
+        }
+    }
 
     Column(
         Modifier
@@ -285,10 +357,111 @@ private fun AppForm(vm: AdminViewModel) {
         )
         Spacer(Modifier.height(12.dp))
 
+        // ---- کارت افزودن سریع: فقط لینک ریپو → بقیه خودکار ----
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Column(Modifier.padding(12.dp)) {
+                Text(
+                    stringResource(R.string.admin_quick_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    stringResource(R.string.admin_quick_hint),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = quickUrl,
+                        onValueChange = { quickUrl = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("github.com/user/repo") },
+                        singleLine = true,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = { vm.autoFill(quickUrl) },
+                        enabled = quickUrl.isNotBlank() && !vm.fetching,
+                    ) { Text(stringResource(R.string.admin_fetch)) }
+                }
+                if (vm.fetching) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            stringResource(R.string.admin_fetching),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                vm.fetchError?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                }
+                if (vm.fetchedLatestTag != null) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "✅ " + stringResource(R.string.admin_latest_stable_fmt, vm.fetchedLatestTag!!),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        stringResource(R.string.admin_fetch_filled),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+
         AdminTextField(stringResource(R.string.form_id) + " *", id) { id = it }
         AdminTextField(stringResource(R.string.form_name) + " *", name) { name = it }
         AdminTextField(stringResource(R.string.form_developer), developer) { developer = it }
-        AdminTextField(stringResource(R.string.form_category_hint), category) { category = it }
+
+        // انتخاب دسته از منوی دسته‌های موجود (یا بدون دسته)
+        ExposedDropdownMenuBox(
+            expanded = catMenuOpen,
+            onExpandedChange = { catMenuOpen = it },
+        ) {
+            OutlinedTextField(
+                value = category,
+                onValueChange = { category = it },
+                label = { Text(stringResource(R.string.form_category_select)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                singleLine = true,
+            )
+            ExposedDropdownMenu(
+                expanded = catMenuOpen,
+                onDismissRequest = { catMenuOpen = false },
+            ) {
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(stringResource(R.string.form_no_category)) },
+                    onClick = {
+                        category = ""
+                        catMenuOpen = false
+                    },
+                )
+                vm.categoryList().forEach { cat ->
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text(cat) },
+                        onClick = {
+                            category = cat
+                            catMenuOpen = false
+                        },
+                    )
+                }
+            }
+        }
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },

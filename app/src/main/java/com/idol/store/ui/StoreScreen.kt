@@ -61,7 +61,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.idol.store.R
-import com.idol.store.data.AppContentState
 import com.idol.store.data.DownloadState
 import com.idol.store.data.StoreApp
 import com.idol.store.data.downloadKey
@@ -70,6 +69,17 @@ import com.idol.store.data.downloadKey
 @Composable
 fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit) {
     var tab by rememberSaveable { mutableStateOf(0) }
+
+    // با هر بازگشت به اپ (مثلاً بعد از نصب APK) وضعیت نصب دوباره چک می‌شود
+    var installTick by rememberSaveable { mutableStateOf(0) }
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) installTick++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         bottomBar = {
@@ -98,10 +108,10 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit) {
         },
     ) { padding ->
         when (tab) {
-            0 -> HomeTab(vm, onLogout, Modifier.padding(padding))
+            0 -> HomeTab(vm, onLogout, Modifier.padding(padding), installTick)
             1 -> SearchTab(vm, Modifier.padding(padding))
             2 -> CategoriesTab(vm, Modifier.padding(padding))
-            else -> YouTab(vm, onLogout, Modifier.padding(padding))
+            else -> YouTab(vm, onLogout, Modifier.padding(padding), installTick)
         }
     }
 }
@@ -110,7 +120,7 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier) {
+private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier, installTick: Int = 0) {
     val contentMap by vm.content.collectAsState()
     var selectedCat by rememberSaveable { mutableStateOf("همه") }
     val categories = vm.catalog?.categories.orEmpty()
@@ -239,14 +249,17 @@ private fun HomeTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier
 private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentState>, app: StoreApp) {
     val states by vm.downloadStates.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
+    val installedVersion = vm.installedVersionCode(app.packageName)
     val latest = (state as? AppContentState.Ready)?.releases?.firstOrNull()
+    val status = installStatusOf(installedVersion, latest?.tagName)
     val key = latest?.let { downloadKey(app.id, it.tagName) }
 
     AppRow(
         app = app,
         state = state,
         downloadState = key?.let { states[it] } ?: DownloadState.Idle,
-        installedVersion = vm.installedVersionCode(app.packageName),
+        installedVersion = installedVersion,
+        installStatus = status,
         onClick = { vm.selectedApp = app },
         onDownload = {
             if (latest != null) (state as? AppContentState.Ready)?.let {
@@ -394,7 +407,7 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
 // ---------------- شما ----------------
 
 @Composable
-private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier) {
+private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier, installTick: Int = 0) {
     val contentMap by vm.content.collectAsState()
     val context = LocalContext.current
     val apps = vm.catalog?.apps.orEmpty()

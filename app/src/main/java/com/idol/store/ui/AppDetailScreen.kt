@@ -64,7 +64,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.idol.store.R
-import com.idol.store.data.AppContentState
 import com.idol.store.data.DownloadState
 import com.idol.store.data.GhAsset
 import com.idol.store.data.GhRelease
@@ -238,8 +237,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                         release = latest,
                         apk = s.universalApk,
                         publishedAt = shortDate(latest.publishedAt),
-                        installed = installedVersion != null &&
-                            installedVersion >= versionCodeFromTag(latest.tagName),
+                        installStatus = installStatusOf(installedVersion, latest.tagName),
                         downloadState = states[downloadKey(app.id, latest.tagName)] ?: DownloadState.Idle,
                         onDownload = { vm.download(app, latest.tagName, s.universalApk) },
                         onCancel = { vm.cancel(downloadKey(app.id, latest.tagName)) },
@@ -263,7 +261,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                                         release = release,
                                         apk = apk,
                                         publishedAt = shortDate(release.publishedAt),
-                                        installed = false,
+                                        installStatus = installStatusOf(installedVersion, release.tagName),
                                         downloadState = states[downloadKey(app.id, release.tagName)]
                                             ?: DownloadState.Idle,
                                         onDownload = { vm.download(app, release.tagName, apk) },
@@ -350,10 +348,6 @@ private fun NotificationToggle(appId: String, latestTag: String) {
     }
 }
 
-/** استخراج versionCode عددی از تگ برای مقایسه نصب */
-private fun versionCodeFromTag(tag: String): Int =
-    Regex("(\\d+)").find(tag.replace(".", " "))?.groupValues?.get(1)?.toIntOrNull() ?: 0
-
 @Composable
 private fun SectionTitle(text: String) {
     Text(
@@ -369,7 +363,7 @@ private fun ReleaseCard(
     release: GhRelease,
     apk: GhAsset,
     publishedAt: String,
-    installed: Boolean,
+    installStatus: InstallStatus,
     downloadState: DownloadState,
     onDownload: () -> Unit,
     onCancel: () -> Unit,
@@ -393,7 +387,7 @@ private fun ReleaseCard(
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                         )
-                        if (installed) {
+                        if (installStatus != InstallStatus.NOT_INSTALLED) {
                             Spacer(Modifier.width(6.dp))
                             InstalledBadge()
                         }
@@ -413,6 +407,7 @@ private fun ReleaseCard(
                 Spacer(Modifier.width(8.dp))
                 DownloadButton(
                     state = downloadState,
+                    installStatus = installStatus,
                     onDownload = onDownload,
                     onCancel = onCancel,
                     onInstall = onInstall,

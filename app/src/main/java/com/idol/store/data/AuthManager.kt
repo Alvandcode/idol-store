@@ -65,6 +65,7 @@ object AuthManager {
     private const val FILE = "idol_auth"
     private const val KEY = "gh_token"
     private const val KEY_LOGIN = "gh_login"
+    private const val KEY_USER_EMAIL = "user_email"
     private const val SCOPE = "public_repo read:user"
 
     private val client = OkHttpClient()
@@ -101,8 +102,20 @@ object AuthManager {
     }
 
     fun clear(context: Context) {
-        prefs(context).edit().remove(KEY).apply()
+        prefs(context).edit().remove(KEY).remove(KEY_USER_EMAIL).apply()
     }
+
+    // ---------- نشست کاربر عادی (ایمیل + توکن دستگاه‌محور) ----------
+
+    fun saveUserSession(context: Context, email: String) {
+        prefs(context).edit().putString(KEY_USER_EMAIL, email).apply()
+    }
+
+    /** ایمیل کاربر عادی (اگر با توکن وارد شده باشد) */
+    fun userEmail(context: Context): String? = prefs(context).getString(KEY_USER_EMAIL, null)
+
+    /** آیا کاربر با هر روشی (گیت‌هاب یا کاربر عادی) وارد شده؟ */
+    fun hasSession(context: Context): Boolean = hasToken(context) || !userEmail(context).isNullOrBlank()
 
     // ---------- Device Flow ----------
 

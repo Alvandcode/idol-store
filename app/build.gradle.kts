@@ -31,6 +31,16 @@ android {
         // ⬇️ ریپوی کاتالوگ برای پنل مدیریت (کامیت apps.json از داخل اپ)
         buildConfigField("String", "CATALOG_REPO", "\"Alvandcode/idol-store-catalog\"")
         buildConfigField("String", "CATALOG_PATH", "\"apps.json\"")
+        // ⬇️ رجیستری کاربران عادی (فایل users.json در ریپوی کاتالوگ؛ توسط GitHub Action پر می‌شود)
+        buildConfigField(
+            "String",
+            "USER_REGISTRY_URL",
+            "\"https://raw.githubusercontent.com/Alvandcode/idol-store-catalog/main/users.json\""
+        )
+        // ⬇️ ریپوی کاتالوگ برای ساخت Issue ثبت‌نام کاربران
+        buildConfigField("String", "REGISTRY_ISSUE_REPO", "\"Alvandcode/idol-store-catalog\"")
+        // ⬇️ راز تولید توکن (تغییرش همه توکن‌ها را نامعتبر می‌کند؛ تو را به خودت)
+        buildConfigField("String", "REG_SECRET", "\"580a81cdb31d62ab055f2982d570c499fefb6927830df851\"")
     }
 
     buildTypes {

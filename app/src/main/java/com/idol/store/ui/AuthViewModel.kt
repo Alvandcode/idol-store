@@ -13,6 +13,7 @@ import com.idol.store.R
 import com.idol.store.data.AuthManager
 import com.idol.store.data.DeviceFlowStart
 import com.idol.store.data.ExchangeResult
+import com.idol.store.data.UserRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -108,6 +109,93 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             } finally {
                 busy = false
             }
+        }
+    }
+
+    // ---------- ثبت‌نام و ورود کاربر عادی (ایمیل + توکن دستگاه‌محور) ----------
+
+    /** کد ثبت‌نام ساخته‌شده برای نمایش به کاربر */
+    var regCode by mutableStateOf<String?>(null)
+        private set
+    /** توکن محاسبه‌شده برای (ایمیل، این دستگاه) — کاربر باید نگهش دارد */
+    var regToken by mutableStateOf<String?>(null)
+        private set
+    var regEmail by mutableStateOf<String?>(null)
+        private set
+
+    /** ساخت کد و توکن ثبت‌نام از روی ایمیل (فقط محلی؛ هیچ درخواستی زده نمی‌شود) */
+    fun prepareRegistration(email: String) {
+        val app = getApplication<Application>()
+        error = null
+        if (!UserRegistry.isValidEmail(email)) {
+            error = app.getString(R.string.err_user_bad_email)
+            return
+        }
+        val trimmed = email.trim().lowercase()
+        regEmail = trimmed
+        regToken = UserRegistry.tokenFor(app, trimmed)
+        regCode = UserRegistry.registrationCode(app, trimmed)
+    }
+
+    fun resetRegistration() {
+        regCode = null
+        regToken = null
+        regEmail = null
+        error = null
+    }
+
+    /** باز کردن صفحه ساخت Issue ثبت‌نام در گیت‌هاب با بدنه از پیش پرشده */
+    fun openRegistrationIssue() {
+        val code = regCode ?: return
+        val app = getApplication<Application>()
+        val title = java.net.URLEncoder.encode("[register] Idol Store", "UTF-8")
+        val body = java.net.URLEncoder.encode(
+            "```\n$code\n```",
+            "UTF-8",
+        )
+        try {
+            app.startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(
+                        "https://github.com/${BuildConfig.REGISTRY_ISSUE_REPO}" +
+                            "/issues/new?title=$title&body=$body"
+                    ),
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (_: Exception) {
+        }
+    }
+
+    /** ورود کاربر: ایمیل + توکن → بررسی رجیستری → ذخیره نشست */
+    fun loginUser(email: String, token: String) {
+        val app = getApplication<Application>()
+        if (!UserRegistry.isValidEmail(email)) {
+            error = app.getString(R.string.err_user_bad_email)
+            return
+        }
+        if (token.isBlank()) {
+            error = app.getString(R.string.err_user_invalid_token)
+            return
+        }
+        busy = true
+        error = null
+        viewModelScope.launch {
+            when (val result = UserRegistry.checkLogin(app, email, token)) {
+                is UserRegistry.AuthResult.Success -> {
+                    AuthManager.saveUserSession(app, result.email)
+                    loggedIn = true
+                }
+                UserRegistry.AuthResult.DeviceBoundToOtherEmail ->
+                    error = app.getString(R.string.err_user_device_bound)
+                UserRegistry.AuthResult.EmailBoundToOtherDevice ->
+                    error = app.getString(R.string.err_user_email_bound)
+                UserRegistry.AuthResult.InvalidToken ->
+                    error = app.getString(R.string.err_user_invalid_token)
+                UserRegistry.AuthResult.NotRegistered ->
+                    error = app.getString(R.string.err_user_not_registered)
+            }
+            busy = false
         }
     }
 }

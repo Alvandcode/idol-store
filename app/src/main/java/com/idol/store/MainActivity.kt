@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Prefs.loadTheme(this)
-        loggedIn = AuthManager.hasToken(this)
+        loggedIn = AuthManager.hasSession(this)
         deepLinkAppId = intent?.getStringExtra(EXTRA_OPEN_APP_ID)
         UpdateChecker.ensureScheduled(this)
         setContent {

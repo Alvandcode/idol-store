@@ -83,13 +83,14 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
         error = null
         viewModelScope.launch {
             try {
-                // اگر توکن قبلاً ذخیره شده ولی نام کاربری ندارد، یک‌بار بگیر
-                currentLogin = AuthManager.login(getApplication())
-                if (currentLogin == null) {
-                    AuthManager.token(getApplication())?.let { tok ->
+                // کاربر عادی (ایمیل + توکن) یا مدیر گیت‌هاب؟
+                val app = getApplication<Application>()
+                currentLogin = AuthManager.userEmail(app) ?: AuthManager.login(app)
+                if (AuthManager.userEmail(app) == null && currentLogin == null) {
+                    AuthManager.token(app)?.let { tok ->
                         try {
                             val user = gh.validateToken(tok)
-                            AuthManager.saveSession(getApplication(), tok, user.login)
+                            AuthManager.saveSession(app, tok, user.login)
                             currentLogin = user.login
                         } catch (_: Exception) {
                         }
@@ -98,7 +99,9 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
 
                 val catalog = CatalogRepository.load(getApplication(), forceRefresh = true)
                 this@StoreViewModel.catalog = catalog
-                isAdmin = AdminAccess.isAllowed(catalog, currentLogin, BuildConfig.CATALOG_REPO)
+                // ادمین فقط با نشست گیت‌هاب (نه نشست ایمیل کاربر عادی)
+                isAdmin = AuthManager.hasToken(app) &&
+                    AdminAccess.isAllowed(catalog, currentLogin, BuildConfig.CATALOG_REPO)
                 // دفاع اصلی: تأیید دسترسی push از خود گیت‌هاب (نام کاربری قابل جعل نیست،
                 // چون از API گیت‌هاب با توکن واقعی گرفته می‌شود — ولی برای اطمینان کامل،
                 // فقط کسی ادمین است که گیت‌هاب دسترسی push او به ریپوی کاتالوگ را تأیید کند)

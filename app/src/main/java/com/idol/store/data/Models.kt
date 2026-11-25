@@ -62,10 +62,18 @@ data class GhUser(
 )
 
 @Serializable
+data class GhOwner(
+    val login: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+)
+
+@Serializable
 data class GhRepoInfo(
+    val name: String? = null,
     val description: String? = null,
     val homepage: String? = null,
     @SerialName("html_url") val htmlUrl: String? = null,
+    val owner: GhOwner? = null,
 )
 
 /** کلید یکتا برای پیگیری وضعیت دانلود هر ریلیز از هر اپ */
