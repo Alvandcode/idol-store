@@ -177,7 +177,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                     Spacer(Modifier.height(14.dp))
 
                     // وضعیت امنیتی نسخه فعلی
-                    SecurityStatusCard(report = security, latestTag = latest.tagName)
+                    SecurityStatusCard(report = security, latestTag = latest.tagName, apkAssetName = s.universalApk.name)
                     Spacer(Modifier.height(12.dp))
 
                     // اعلان بروزرسانی این اپ
@@ -301,7 +301,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
 }
 
 @Composable
-private fun SecurityStatusCard(report: SecurityResult?, latestTag: String) {
+private fun SecurityStatusCard(report: SecurityResult?, latestTag: String, apkAssetName: String) {
     val status = report?.status ?: "not_scanned"
     val tint = when (status) {
         "no_detection" -> MaterialTheme.colorScheme.primary
@@ -320,7 +320,7 @@ private fun SecurityStatusCard(report: SecurityResult?, latestTag: String) {
     }
     val sourceStatus = report?.source?.status ?: "نامشخص"
     val dependencyStatus = report?.source?.dependencyAudit?.status ?: "نامشخص"
-    val apkHash = report?.assets?.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }?.sha256
+    val apkHash = report?.assets?.firstOrNull { it.name == apkAssetName }?.sha256
 
     Card(
         modifier = Modifier.fillMaxWidth(),
