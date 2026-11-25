@@ -76,7 +76,7 @@ fun LoginScreen(vm: AuthViewModel, onLoggedIn: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_launcher_foreground),
+                painter = painterResource(R.drawable.ic_logo),
                 contentDescription = stringResource(R.string.app_name),
                 modifier = Modifier.size(96.dp),
                 tint = MaterialTheme.colorScheme.primary,

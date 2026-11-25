@@ -50,6 +50,37 @@ android {
         }
     }
 
+    // لایسنس ثابت: هر دو بیلد debug و release با کلید ثابت (از env در CI یا فایل local) امضا
+    // می‌شوند تا آپدیت‌ها بدون حذفِ نسخه قبلی، مستقیم نصب شوند.
+    signingConfigs {
+        create("idol") {
+            val ks = System.getenv("IDOL_KEYSTORE")
+                ?: rootProject.file("signing/idol-store.keystore").takeIf { it.exists() }?.absolutePath
+            val pass = System.getenv("IDOL_KEYSTORE_PASSWORD")
+            if (ks != null && !pass.isNullOrEmpty()) {
+                storeFile = file(ks)
+                storePassword = pass
+                keyAlias = System.getenv("IDOL_KEY_ALIAS") ?: "idol-store"
+                keyPassword = System.getenv("IDOL_KEY_PASSWORD") ?: pass
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            if (signingConfigs.getByName("idol").storeFile != null) {
+                signingConfig = signingConfigs.getByName("idol")
+            }
+        }
+        release {
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (signingConfigs.getByName("idol").storeFile != null) {
+                signingConfig = signingConfigs.getByName("idol")
+            }
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
