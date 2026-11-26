@@ -1,7 +1,9 @@
 package com.idol.store.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -49,6 +52,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,36 +70,72 @@ fun AdminScreen(onBack: () -> Unit) {
     val vm: AdminViewModel = viewModel()
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.admin_panel), fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
-            )
-        },
     ) { padding ->
         Column(
             Modifier
                 .padding(padding)
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .fillMaxSize(),
         ) {
-            Card(
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            // هدر گرادیانی پنل مدیریت
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(HeaderGradient),
             ) {
-                Text(
-                    text = stringResource(R.string.admin_current_account) + " ${vm.currentLogin ?: "—"}",
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(12.dp),
+                Box(
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(140.dp)
+                        .background(GlowGradient),
                 )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Box(
+                        Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(BrandGradient),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.AdminPanelSettings,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.admin_panel),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontSize = 18.sp,
+                        )
+                        Text(
+                            stringResource(R.string.admin_current_account) + " ${vm.currentLogin ?: "—"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
 
-            Spacer(Modifier.height(10.dp))
-
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+            ) {
             when {
                 vm.loading -> Column(
                     Modifier.fillMaxSize(),
@@ -120,6 +161,7 @@ fun AdminScreen(onBack: () -> Unit) {
 
                 else -> AdminList(vm)
             }
+            }
         }
     }
 }
@@ -131,9 +173,10 @@ private fun AdminList(vm: AdminViewModel) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp),
     ) {
         item {
-            FilledTonalButton(
+            Button(
                 onClick = { vm.openEditor(null) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -145,7 +188,7 @@ private fun AdminList(vm: AdminViewModel) {
 
         items(vm.apps, key = { it.id }) { app ->
             Card(
-                shape = RoundedCornerShape(14.dp),
+                shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             ) {
@@ -155,11 +198,17 @@ private fun AdminList(vm: AdminViewModel) {
                         .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    AppIcon(
+                        model = app.iconUrl,
+                        contentDescription = app.name,
+                        size = 46.dp,
+                    )
+                    Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(app.name, fontWeight = FontWeight.Bold)
+                        Text(app.name, style = MaterialTheme.typography.titleMedium)
                         Text(
                             "${app.id}  •  ${app.github}",
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                         )
@@ -176,6 +225,7 @@ private fun AdminList(vm: AdminViewModel) {
                             Icons.Filled.Delete,
                             contentDescription = stringResource(R.string.delete),
                             modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.error,
                         )
                     }
                 }
@@ -183,48 +233,62 @@ private fun AdminList(vm: AdminViewModel) {
         }
 
         item {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.admin_managers_hint),
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-            )
-            Spacer(Modifier.height(6.dp))
-            OutlinedTextField(
-                value = vm.admins,
-                onValueChange = { vm.admins = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Alvandcode, friend1") },
-                singleLine = true,
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                stringResource(R.string.admin_categories_hint),
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-            )
-            Spacer(Modifier.height(6.dp))
-            CategoryEditor(vm)
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = { vm.publish() },
-                enabled = !vm.saving,
-                modifier = Modifier.fillMaxWidth(),
+            // کارت انتشار کاتالوگ: مدیران + دسته‌ها + دکمه انتشار
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(16.dp),
             ) {
-                if (vm.saving) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.AdminPanelSettings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        stringResource(R.string.admin_managers_hint),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                 }
-                Text(stringResource(R.string.admin_publish_btn))
-            }
-            vm.message?.let {
-                Spacer(Modifier.height(8.dp))
-                Text(it, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            vm.globalError?.let {
-                Spacer(Modifier.height(8.dp))
-                Text(it, fontSize = 13.sp, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = vm.admins,
+                    onValueChange = { vm.admins = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Alvandcode, friend1") },
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    stringResource(R.string.admin_categories_hint),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(Modifier.height(10.dp))
+                CategoryEditor(vm)
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = { vm.publish() },
+                    enabled = !vm.saving,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (vm.saving) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(stringResource(R.string.admin_publish_btn))
+                }
+                vm.message?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                vm.globalError?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -349,17 +413,15 @@ private fun AppForm(vm: AdminViewModel) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        Text(
+        SectionHeader(
             if (vm.editingNew) stringResource(R.string.admin_new_app)
             else stringResource(R.string.admin_editing_fmt, editing.name),
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(4.dp))
 
         // ---- کارت افزودن سریع: فقط لینک ریپو → بقیه خودکار ----
         Card(
-            shape = RoundedCornerShape(14.dp),
+            shape = MaterialTheme.shapes.medium,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         ) {
             Column(Modifier.padding(12.dp)) {
@@ -481,9 +543,10 @@ private fun AppForm(vm: AdminViewModel) {
         }
 
         Spacer(Modifier.height(14.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             val context = androidx.compose.ui.platform.LocalContext.current
             Button(
+                modifier = Modifier.weight(1f),
                 onClick = {
                     when {
                         id.isBlank() -> formError = context.getString(R.string.form_err_id)
@@ -511,7 +574,7 @@ private fun AppForm(vm: AdminViewModel) {
                     }
                 },
             ) { Text(stringResource(R.string.form_save_list)) }
-            OutlinedButton(onClick = { vm.closeEditor() }) {
+            OutlinedButton(onClick = { vm.closeEditor() }, modifier = Modifier.weight(0.5f)) {
                 Text(stringResource(R.string.form_cancel))
             }
         }
