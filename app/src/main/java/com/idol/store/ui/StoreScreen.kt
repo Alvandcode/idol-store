@@ -1,16 +1,26 @@
 package com.idol.store.ui
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,9 +57,6 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -63,17 +70,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.idol.store.R
@@ -101,30 +114,16 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit, onOpenLegal: (String) ->
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp,
-            ) {
-                val items = listOf(
+            IdolBottomBar(
+                items = listOf(
                     Icons.Filled.Home to stringResource(R.string.tab_store),
                     Icons.Filled.Search to stringResource(R.string.tab_search),
                     Icons.Filled.Category to stringResource(R.string.tab_categories),
                     Icons.Filled.Person to stringResource(R.string.tab_you),
-                )
-                items.forEachIndexed { i, (icon, label) ->
-                    NavigationBarItem(
-                        selected = tab == i,
-                        onClick = { tab = i },
-                        icon = { Icon(icon, contentDescription = null) },
-                        label = { Text(label, style = MaterialTheme.typography.labelMedium) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                            indicatorColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-                }
-            }
+                ),
+                selected = tab,
+                onSelect = { tab = it },
+            )
         },
     ) { padding ->
         when (tab) {
@@ -146,6 +145,118 @@ private fun BrandIcon(size: Int) {
             .size(size.dp)
             .clip(RoundedCornerShape((size * 0.26f).dp)),
     )
+}
+
+/**
+ * نوار پایین به سبک «Tab Bar Interactive»:
+ * جزیره شناور با نشانگر لیکوئیدی گرادیان برند که با فنر می‌لغزد،
+ * آیکون فعال بالا و بزرگ می‌شود و برچسبش ظاهر می‌گردد.
+ */
+@Composable
+private fun IdolBottomBar(
+    items: List<Pair<androidx.compose.ui.graphics.vector.ImageVector, String>>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+) {
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 18.dp, vertical = 10.dp),
+    ) {
+        val barWidth = maxWidth
+        val itemWidth = barWidth / items.size
+        val barHeight = 66.dp
+        val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+
+        // لغزش نشانگر با فنر
+        val indicatorX by animateDpAsState(
+            targetValue = itemWidth * (if (rtl) (items.size - 1 - selected) else selected),
+            animationSpec = spring(dampingRatio = 0.72f, stiffness = 320f),
+            label = "navIndicator",
+        )
+        // کشسگی نشانگر حین حرکت (افکت مایع)
+        val indicatorStretch by animateFloatAsState(
+            targetValue = 1f,
+            animationSpec = spring(dampingRatio = 0.5f, stiffness = 700f),
+            label = "navStretch",
+        )
+
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(barHeight)
+                .shadow(10.dp, CircleShape, spotColor = Color(0xFF22D3EE))
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), CircleShape),
+        ) {
+            // نشانگر لیکوئیدی گرادیان برند
+            Box(
+                Modifier
+                    .offset(x = indicatorX)
+                    .padding(7.dp)
+                    .width((itemWidth - 14.dp) * indicatorStretch)
+                    .height(barHeight - 14.dp)
+                    .clip(CircleShape)
+                    .background(BrandGradient),
+            )
+
+            Row(Modifier.fillMaxSize()) {
+                items.forEachIndexed { i, (icon, label) ->
+                    val sel = i == selected
+                    // پرش آیکون فعال با فنر
+                    val iconScale by animateFloatAsState(
+                        targetValue = if (sel) 1.18f else 1f,
+                        animationSpec = spring(dampingRatio = 0.45f, stiffness = 640f),
+                        label = "navIcon$i",
+                    )
+                    val iconLift by animateDpAsState(
+                        targetValue = if (sel) (-9).dp else 0.dp,
+                        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+                        label = "navLift$i",
+                    )
+                    val labelAlpha by animateFloatAsState(
+                        targetValue = if (sel) 1f else 0f,
+                        animationSpec = spring(dampingRatio = 0.9f, stiffness = 380f),
+                        label = "navLabel$i",
+                    )
+
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { onSelect(i) },
+                    ) {
+                        Icon(
+                            icon,
+                            contentDescription = label,
+                            tint = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .offset(y = iconLift)
+                                .scale(iconScale)
+                                .size(24.dp),
+                        )
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            color = Color.White,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .offset(y = 19.dp)
+                                .alpha(labelAlpha),
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ---------------- استور (خانه) ----------------
@@ -190,18 +301,19 @@ private fun HomeTab(
                             stringResource(R.string.app_name),
                             style = MaterialTheme.typography.titleLarge,
                             fontSize = 20.sp,
+                            color = Color.White,
                         )
                         Text(
                             stringResource(R.string.home_tagline),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Color.White.copy(alpha = 0.65f),
                         )
                     }
                     IconButton(onClick = { vm.refresh() }) {
                         Icon(
                             Icons.Filled.Refresh,
                             contentDescription = stringResource(R.string.refresh),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = Color.White.copy(alpha = 0.75f),
                         )
                     }
                     if (vm.isAdmin) {
@@ -217,7 +329,7 @@ private fun HomeTab(
                         Icon(
                             Icons.Filled.Logout,
                             contentDescription = stringResource(R.string.logout),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = Color.White.copy(alpha = 0.75f),
                         )
                     }
                 }
@@ -587,12 +699,13 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier,
                         Text(
                             stringResource(R.string.you_github_account),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Color.White.copy(alpha = 0.65f),
                         )
                         Text(
                             vm.currentLogin ?: "—",
                             style = MaterialTheme.typography.titleMedium,
                             fontSize = 18.sp,
+                            color = Color.White,
                         )
                     }
                 }

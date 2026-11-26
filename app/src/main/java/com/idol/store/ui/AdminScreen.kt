@@ -99,7 +99,7 @@ fun AdminScreen(onBack: () -> Unit) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = Color.White.copy(alpha = 0.75f),
                         )
                     }
                     Box(
@@ -122,11 +122,12 @@ fun AdminScreen(onBack: () -> Unit) {
                             stringResource(R.string.admin_panel),
                             style = MaterialTheme.typography.titleLarge,
                             fontSize = 18.sp,
+                            color = Color.White,
                         )
                         Text(
                             stringResource(R.string.admin_current_account) + " ${vm.currentLogin ?: "—"}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Color.White.copy(alpha = 0.65f),
                         )
                     }
                 }

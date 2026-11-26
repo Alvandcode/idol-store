@@ -439,10 +439,11 @@ private fun ReleaseCard(
                     onInstall = onInstall,
                 )
             }
-            if (!release.body.isNullOrBlank()) {
+            val cleanedBody = cleanReleaseBody(release.body.orEmpty())
+            if (cleanedBody.isNotBlank()) {
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    release.body,
+                    cleanedBody,
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 20.sp,

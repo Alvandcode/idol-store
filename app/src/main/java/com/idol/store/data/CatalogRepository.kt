@@ -30,7 +30,7 @@ object CatalogRepository {
                 withContext(Dispatchers.IO) {
                     client.newCall(Request.Builder().url(remoteUrl).build()).execute().use { resp ->
                         if (resp.isSuccessful) {
-                            val body = resp.body?.string() ?: throw IOException("پاسخ خالی بود")
+                            val body = resp.body?.string() ?: throw IOException()
                             cached = json.decodeFromString<Catalog>(body)
                         }
                     }

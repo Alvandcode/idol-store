@@ -57,6 +57,43 @@ fun installStatusOf(installedVersion: Int?, latestTag: String?): InstallStatus =
     else -> InstallStatus.UPDATE_AVAILABLE
 }
 
+/** پاک‌سازی متن ریلیز: حذف HTML، مارک‌داون و لینک‌ها؛ فقط متن چنج‌لاگ */
+fun cleanReleaseBody(raw: String): String {
+    var s = raw
+    // کامنت‌های HTML
+    s = s.replace(Regex("<!--[\\s\\S]*?-->"), "")
+    // خط جدید از br
+    s = s.replace(Regex("<br\\s*/?>"), "\n")
+    // تگ‌های بلوکی → خط جدید (قبل از حذف همه تگ‌ها)
+    s = s.replace(Regex("</?(tr|td|th|table|thead|tbody|p|div|h[1-6]|li|ul|ol|blockquote)\\b[^>]*>"), "\n")
+    // تصاویر markdown و HTML
+    s = s.replace(Regex("!\\[[^\\]]*\\]\\([^)]*\\)"), "")
+    s = s.replace(Regex("<img[^>]*>"), "")
+    // لینک‌های markdown → فقط متن لینک
+    s = s.replace(Regex("\\[([^\\]]+)\\]\\([^)]*\\)"), "$1")
+    // حذف باقی تگ‌ها
+    s = s.replace(Regex("<[^>]*>"), "")
+    // entityها
+    s = s.replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&nbsp;", " ")
+    // بولد/ایتالیک مارک‌داون
+    s = s.replace(Regex("\\*\\*([^*]*)\\*\\*"), "$1")
+    s = s.replace(Regex("__([^_]+)__"), "$1")
+    s = s.replace("*", "")
+    s = s.replace("`", "")
+    // هدینگ‌های مارک‌داون
+    s = s.replace(Regex("(?m)^#{1,6}\\s*"), "")
+    // خطوط خالی تکراری
+    s = s.replace(Regex("\n{3,}"), "\n\n")
+    // فاصله‌های تکراری ناشی از جدول‌ها
+    s = s.replace(Regex("[ ]{3,}"), "\n")
+    return s.trim()
+}
+
 /** ردیف اپ به سبک گوگل‌پلی: آیکون + نام + توضیح + متا + دکمه */
 @Composable
 fun AppRow(

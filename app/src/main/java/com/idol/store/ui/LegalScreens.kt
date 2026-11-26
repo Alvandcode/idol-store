@@ -98,7 +98,7 @@ private fun LegalScreen(
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = Color.White.copy(alpha = 0.75f),
                     )
                 }
                 Box(
@@ -117,7 +117,7 @@ private fun LegalScreen(
                 }
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(title, style = MaterialTheme.typography.titleLarge, fontSize = 18.sp)
+                    Text(title, style = MaterialTheme.typography.titleLarge, fontSize = 18.sp, color = Color.White)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
                             painter = painterResource(R.drawable.ic_logo),
@@ -130,7 +130,7 @@ private fun LegalScreen(
                         Text(
                             "Idol Store",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Color.White.copy(alpha = 0.65f),
                         )
                     }
                 }

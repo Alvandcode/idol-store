@@ -15,7 +15,6 @@ import com.idol.store.data.CatalogRepository
 import com.idol.store.data.GitHubService
 import com.idol.store.data.StoreApp
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 /**
  * پنل مدیریت کاتالوگ: افزودن/ویرایش/حذف اپ‌ها و تعیین مدیران،
@@ -252,7 +251,7 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                     apps = apps,
                     admins = admins.split(",").map { it.trim() }.filter { it.isNotEmpty() },
                     categories = categories.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                    updatedAt = LocalDate.now().toString(),
+                    updatedAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()),
                 )
                 val json = kotlinx.serialization.json.Json {
                     prettyPrint = true

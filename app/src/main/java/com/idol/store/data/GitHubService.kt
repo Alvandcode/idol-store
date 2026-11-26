@@ -11,7 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
-import java.util.Base64
+import android.util.Base64 as AndroidBase64
 
 /**
  * سرویس GitHub API:
@@ -83,7 +83,7 @@ class GitHubService(private val tokenProvider: () -> String?) {
 
     suspend fun validateToken(token: String): GhUser {
         val (code, body) = get("https://api.github.com/user")
-        if (code != 200) throw IOException("توکن نامعتبر است (کد $code)")
+        if (code != 200) throw GitHubApiException(code)
         return json.decodeFromString<GhUser>(body)
     }
 
@@ -118,7 +118,7 @@ class GitHubService(private val tokenProvider: () -> String?) {
             val parsed = json.decodeFromString<GhContents>(body)
             val decoded = parsed.content
                 ?.replace("\n", "")
-                ?.let { String(Base64.getDecoder().decode(it), Charsets.UTF_8) }
+                ?.let { String(AndroidBase64.decode(it, AndroidBase64.DEFAULT), Charsets.UTF_8) }
             return Pair(parsed.sha, decoded)
         }
 
@@ -132,7 +132,7 @@ class GitHubService(private val tokenProvider: () -> String?) {
         ): String {
             val (sha, _) = readCatalogFile(repo, path, token)
             val payload = json.encodeToString(
-                CommitRequest(message, Base64.getEncoder().encodeToString(content.toByteArray(Charsets.UTF_8)), sha)
+                CommitRequest(message, AndroidBase64.encodeToString(content.toByteArray(Charsets.UTF_8), AndroidBase64.NO_WRAP), sha)
             )
             val (code, body) = fetch(
                 "https://api.github.com/repos/$repo/contents/$path", token, method = "PUT", bodyJson = payload
