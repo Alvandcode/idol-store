@@ -82,7 +82,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
     val states by vm.downloadStates.collectAsState()
     val contentMap by vm.content.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
-    val installedVersion = vm.installedVersionCode(app.packageName)
+    val installedVersion = vm.installedVersionName(app.packageName)
     val context = LocalContext.current
 
     Scaffold(
@@ -173,7 +173,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                                         InstalledBadge()
                                         Spacer(Modifier.width(6.dp))
                                         Text(
-                                            stringResource(R.string.installed_version_fmt, installedVersion),
+                                            stringResource(R.string.installed_version_fmt, installedVersion ?: ""),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -208,7 +208,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                     // توضیحات (از کاتالوگ، وگرنه توضیحات ریپو از گیت‌هاب)
                     SectionTitle(stringResource(R.string.detail_description))
                     Text(
-                        app.description ?: s.repoInfo?.description
+                        localizedDescription(app) ?: s.repoInfo?.description
                             ?: stringResource(R.string.detail_desc_none),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 22.sp,

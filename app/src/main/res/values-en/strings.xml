@@ -27,7 +27,10 @@
     <string name="cat_add_btn">Add</string>
     <string name="progress_fmt">%1$d%%</string>
     <string name="installed">Installed</string>
-    <string name="installed_version_fmt">Installed version: %1$d</string>
+    <string name="installed_version_fmt">Installed version: %1$s</string>
+    <string name="cat_tools">Tools</string>
+    <string name="cat_media">Media</string>
+    <string name="cat_security">Security &amp; Privacy</string>
     <string name="version_fmt">v%1$s</string>
     <string name="fetching">Fetching…</string>
     <string name="error_loading">Failed to load data</string>
@@ -209,6 +212,7 @@
     <string name="form_developer">Developer</string>
     <string name="form_category_hint">Category (must be one of the defined ones)</string>
     <string name="form_description">Description</string>
+    <string name="form_description_en">Description (English)</string>
     <string name="form_icon_url">Icon URL</string>
     <string name="form_package">Package name (for install detection)</string>
     <string name="form_github">Repo / release page on GitHub</string>

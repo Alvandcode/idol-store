@@ -45,16 +45,32 @@ enum class InstallStatus {
     UPDATE_AVAILABLE,
 }
 
-/** استخراج versionCode عددی از تگ برای مقایسه با نسخه نصب‌شده */
-fun versionCodeFromTag(tag: String): Int =
-    Regex("(\\d+)").find(tag.replace(".", " "))?.groupValues?.get(1)?.toIntOrNull() ?: 0
+/** استخراج اجزای عددی نسخه از versionName یا تگ: "v2.3.15" → [2,3,15] */
+fun parseVersionTuple(v: String?): List<Int> =
+    v?.replace(Regex("^[vV]+"), "")
+        ?.split('.', '-', '_', ' ')
+        ?.mapNotNull { part -> part.filter { it.isDigit() }.takeIf { it.isNotEmpty() }?.toIntOrNull() }
+        ?: emptyList()
 
-/** محاسبه وضعیت نصب از روی versionCode نصب‌شده و تگ آخرین ریلیز */
-fun installStatusOf(installedVersion: Int?, latestTag: String?): InstallStatus = when {
-    installedVersion == null -> InstallStatus.NOT_INSTALLED
+/** محاسبه وضعیت نصب با مقایسه versionName نصب‌شده و تگ آخرین ریلیز */
+fun installStatusOf(installedVersionName: String?, latestTag: String?): InstallStatus = when {
+    installedVersionName == null -> InstallStatus.NOT_INSTALLED
     latestTag == null -> InstallStatus.UP_TO_DATE
-    installedVersion >= versionCodeFromTag(latestTag) -> InstallStatus.UP_TO_DATE
-    else -> InstallStatus.UPDATE_AVAILABLE
+    else -> {
+        val a = parseVersionTuple(installedVersionName)
+        val b = parseVersionTuple(latestTag)
+        val n = maxOf(a.size, b.size)
+        var cmp = 0
+        for (i in 0 until n) {
+            val x = a.getOrElse(i) { 0 }
+            val y = b.getOrElse(i) { 0 }
+            if (x != y) {
+                cmp = if (x < y) -1 else 1
+                break
+            }
+        }
+        if (cmp >= 0) InstallStatus.UP_TO_DATE else InstallStatus.UPDATE_AVAILABLE
+    }
 }
 
 /** پاک‌سازی متن ریلیز: حذف HTML، مارک‌داون و لینک‌ها؛ فقط متن چنج‌لاگ */
@@ -100,7 +116,7 @@ fun AppRow(
     app: StoreApp,
     state: AppContentState,
     downloadState: DownloadState,
-    installedVersion: Int?,
+    installedVersionName: String?,
     onClick: () -> Unit,
     onDownload: () -> Unit,
     onCancel: () -> Unit,
@@ -132,13 +148,13 @@ fun AppRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
-                if (installedVersion != null) {
+                if (installedVersionName != null) {
                     Spacer(Modifier.width(8.dp))
                     InstalledBadge()
                 }
             }
             Spacer(Modifier.height(2.dp))
-            val desc = app.description ?: app.developer ?: "—"
+            val desc = localizedDescription(app) ?: app.developer ?: "—"
             Text(
                 desc,
                 style = MaterialTheme.typography.bodyMedium,

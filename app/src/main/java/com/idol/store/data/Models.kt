@@ -25,6 +25,8 @@ data class StoreApp(
     val developer: String? = null,
     val category: String? = null,
     val description: String? = null,
+    /** توضیح انگلیسی برای حالت زبان انگلیسی (اختیاری) */
+    val descriptionEn: String? = null,
     val iconUrl: String? = null,
     val packageName: String? = null,
     /** "owner/repo" یا آدرس کامل ریپو/ریلیز گیت‌هاب */

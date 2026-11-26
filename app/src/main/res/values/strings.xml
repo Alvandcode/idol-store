@@ -28,7 +28,10 @@
     <string name="cat_add_btn">افزودن</string>
     <string name="progress_fmt">٪%1$d</string>
     <string name="installed">نصب‌شده</string>
-    <string name="installed_version_fmt">نسخه نصب‌شده: %1$d</string>
+    <string name="installed_version_fmt">نسخه نصب‌شده: %1$s</string>
+    <string name="cat_tools">ابزارها</string>
+    <string name="cat_media">رسانه</string>
+    <string name="cat_security">امنیت و حریم خصوصی</string>
     <string name="version_fmt">نسخه %1$s</string>
     <string name="fetching">در حال دریافت…</string>
     <string name="error_loading">خطا در دریافت اطلاعات</string>
@@ -210,6 +213,7 @@
     <string name="form_developer">توسعه‌دهنده</string>
     <string name="form_category_hint">دسته (باید از دسته‌های تعریف‌شده باشد)</string>
     <string name="form_description">توضیحات</string>
+    <string name="form_description_en">توضیحات (انگلیسی)</string>
     <string name="form_icon_url">آدرس آیکون (URL)</string>
     <string name="form_package">نام پکیج (برای تشخیص نصب)</string>
     <string name="form_github">ریپو/صفحه ریلیز گیت‌هاب</string>

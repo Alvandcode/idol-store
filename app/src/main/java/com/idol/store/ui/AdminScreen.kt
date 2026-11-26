@@ -385,6 +385,7 @@ private fun AppForm(vm: AdminViewModel) {
     var developer by rememberSaveable { mutableStateOf(editing.developer ?: "") }
     var category by rememberSaveable { mutableStateOf(editing.category ?: "") }
     var description by rememberSaveable { mutableStateOf(editing.description ?: "") }
+    var descriptionEn by rememberSaveable { mutableStateOf(editing.descriptionEn ?: "") }
     var iconUrl by rememberSaveable { mutableStateOf(editing.iconUrl ?: "") }
     var packageName by rememberSaveable { mutableStateOf(editing.packageName ?: "") }
     var github by rememberSaveable { mutableStateOf(editing.github) }
@@ -532,6 +533,12 @@ private fun AppForm(vm: AdminViewModel) {
             label = { Text(stringResource(R.string.form_description)) },
             modifier = Modifier.fillMaxWidth(),
         )
+        OutlinedTextField(
+            value = descriptionEn,
+            onValueChange = { descriptionEn = it },
+            label = { Text(stringResource(R.string.form_description_en)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
         AdminTextField(stringResource(R.string.form_icon_url), iconUrl) { iconUrl = it }
         AdminTextField(stringResource(R.string.form_package), packageName) { packageName = it }
         AdminTextField(stringResource(R.string.form_github) + " *", github) { github = it }
@@ -564,6 +571,7 @@ private fun AppForm(vm: AdminViewModel) {
                                     developer = developer.trim().ifBlank { null },
                                     category = category.trim().ifBlank { null },
                                     description = description.trim().ifBlank { null },
+                                    descriptionEn = descriptionEn.trim().ifBlank { null },
                                     iconUrl = iconUrl.trim().ifBlank { null },
                                     packageName = packageName.trim().ifBlank { null },
                                     github = GitHubService.repoFromUrl(github.trim())!!,

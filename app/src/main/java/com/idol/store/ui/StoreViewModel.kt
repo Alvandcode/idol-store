@@ -256,6 +256,17 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** versionName نصب‌شده برای مقایسه دقیق با تگ ریلیز */
+    fun installedVersionName(packageName: String?): String? {
+        if (packageName.isNullOrBlank()) return null
+        return try {
+            getApplication<Application>().packageManager
+                .getPackageInfo(packageName, 0).versionName
+        } catch (_: PackageManager.NameNotFoundException) {
+            null
+        }
+    }
+
     fun logout(onDone: () -> Unit) {
         AuthManager.clear(getApplication())
         onDone()

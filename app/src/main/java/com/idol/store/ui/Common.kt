@@ -182,3 +182,27 @@ fun SettingsCard(
         }
     }
 }
+
+/** آیا زبان فعلی اپ انگلیسی است؟ */
+@Composable
+fun isEnglishLocale(): Boolean {
+    val lang = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
+    return lang != "fa"
+}
+
+/** نام دسته به زبان فعلی — دسته‌های شناخته‌شده ترجمه می‌شوند */
+@Composable
+fun localizedCategory(cat: String): String = when (cat) {
+    "ابزارها" -> stringResource(R.string.cat_tools)
+    "رسانه" -> stringResource(R.string.cat_media)
+    "امنیت و حریم خصوصی" -> stringResource(R.string.cat_security)
+    else -> cat
+}
+
+/** توضیح اپ به زبان فعلی (در حالت انگلیسی از descriptionEn) */
+@Composable
+fun localizedDescription(app: com.idol.store.data.StoreApp): String? {
+    val base = app.description
+    val en = app.descriptionEn
+    return if (isEnglishLocale() && !en.isNullOrBlank()) en else base
+}

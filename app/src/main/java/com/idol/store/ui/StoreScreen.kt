@@ -191,10 +191,10 @@ private fun IdolBottomBar(
                 .background(MaterialTheme.colorScheme.surface)
                 .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), CircleShape),
         ) {
-            // نشانگر لیکوئیدی گرادیان برند
+            // نشانگر لیکوئیدی گرادیان برند (offset مطلق — خودش آینه نمی‌شود)
             Box(
                 Modifier
-                    .offset(x = indicatorX)
+                    .offset { androidx.compose.ui.unit.IntOffset(indicatorX.roundToPx(), 0) }
                     .padding(7.dp)
                     .width((itemWidth - 14.dp) * indicatorStretch)
                     .height(barHeight - 14.dp)
@@ -378,7 +378,7 @@ private fun HomeTab(
                     FilterChip(
                         selected = selectedCat == cat,
                         onClick = { selectedCat = cat },
-                        label = { Text(cat) },
+                        label = { Text(localizedCategory(cat)) },
                         colors = chipColors(),
                     )
                 }
@@ -421,7 +421,7 @@ private fun HomeTab(
                             val list = apps.filter { it.category == cat }
                             if (list.isNotEmpty()) {
                                 item(key = "h_$cat") {
-                                    SectionHeader(cat, showViewAll = list.size > 4) {
+                                    SectionHeader(localizedCategory(cat), showViewAll = list.size > 4) {
                                         vm.openCategory = cat
                                     }
                                 }
@@ -478,7 +478,7 @@ private fun chipColors() = FilterChipDefaults.filterChipColors(
 private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentState>, app: StoreApp) {
     val states by vm.downloadStates.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
-    val installedVersion = vm.installedVersionCode(app.packageName)
+    val installedVersion = vm.installedVersionName(app.packageName)
     val latest = (state as? AppContentState.Ready)?.releases?.firstOrNull()
     val status = installStatusOf(installedVersion, latest?.tagName)
     val key = latest?.let { downloadKey(app.id, it.tagName) }
@@ -623,7 +623,7 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
                     ) {
                         Column(Modifier.align(Alignment.BottomStart)) {
                             Text(
-                                cat,
+                                localizedCategory(cat),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = Color.White,
                                 maxLines = 1,
@@ -656,7 +656,7 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier,
     val contentMap by vm.content.collectAsState()
     val context = LocalContext.current
     val apps = vm.catalog?.apps.orEmpty()
-    val installed = apps.filter { vm.installedVersionCode(it.packageName) != null }
+    val installed = apps.filter { vm.installedVersionName(it.packageName) != null }
     var themeMode by rememberSaveable { mutableStateOf(Prefs.themeMode.name) }
 
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
@@ -884,7 +884,7 @@ fun CategoryAppsScreen(vm: StoreViewModel, key: String, onBack: () -> Unit) {
     val title = when (key) {
         "__recent__" -> stringResource(R.string.recent_updates)
         "__other__" -> stringResource(R.string.other_apps)
-        else -> key
+        else -> localizedCategory(key)
     }
     val list = when (key) {
         "__recent__" -> vm.recentApps
