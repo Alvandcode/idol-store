@@ -126,6 +126,9 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                 is AppContentState.Ready -> {
                     val latest = s.releases.first()
 
+                    // چک خودکار گزارش اسکن هنگام ورود به صفحه اپ
+                    androidx.compose.runtime.LaunchedEffect(app.id) { vm.ensureSecurityLoaded() }
+
                     // هدر هیرو: پس‌زمینه گرادیانی + آیکون برند
                     Column {
                         Box(
@@ -262,7 +265,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                         publishedAt = shortDate(latest.publishedAt),
                         installStatus = installStatusOf(installedVersion, latest.tagName),
                         downloadState = states[downloadKey(app.id, latest.tagName)] ?: DownloadState.Idle,
-                        onDownload = { vm.download(app, latest.tagName, s.universalApk) },
+                        onDownload = { vm.requestDownload(app, latest.tagName, s.universalApk) },
                         onCancel = { vm.cancel(downloadKey(app.id, latest.tagName)) },
                         onInstall = {
                             val key = downloadKey(app.id, latest.tagName)
@@ -287,7 +290,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                                         installStatus = installStatusOf(installedVersion, release.tagName),
                                         downloadState = states[downloadKey(app.id, release.tagName)]
                                             ?: DownloadState.Idle,
-                                        onDownload = { vm.download(app, release.tagName, apk) },
+                                        onDownload = { vm.requestDownload(app, release.tagName, apk) },
                                         onCancel = { vm.cancel(downloadKey(app.id, release.tagName)) },
                                         onInstall = {
                                             val key = downloadKey(app.id, release.tagName)

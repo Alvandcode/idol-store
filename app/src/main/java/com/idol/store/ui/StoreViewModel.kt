@@ -18,6 +18,9 @@ import com.idol.store.data.GhAsset
 import com.idol.store.data.GhRelease
 import com.idol.store.data.GitHubService
 import com.idol.store.data.Installer
+import com.idol.store.data.SecurityGateStatus
+import com.idol.store.data.SecurityRepository
+import com.idol.store.data.SecurityResult
 import com.idol.store.data.StoreErrorKind
 import com.idol.store.data.StoreException
 import com.idol.store.data.StoreApp
@@ -32,6 +35,14 @@ import kotlinx.coroutines.sync.withPermit
 import java.io.File
 
 /** وضعیت گرفتن ریلیزهای هر اپ از گیت‌هاب */
+
+/** درخواست دانلود منتظر نتیجه اسکن و تایید کاربر */
+data class SecurityGateRequest(
+    val app: com.idol.store.data.StoreApp,
+    val tag: String,
+    val asset: GhAsset,
+)
+
 sealed interface AppContentState {
     data object Loading : AppContentState
 
@@ -182,6 +193,50 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
             url = asset.downloadUrl,
             fileName = "$safeId-$tag.apk",
         )
+    }
+
+    // ---------- گیت امنیتی: اسکن خودکار قبل از هر دانلود/نصب ----------
+
+    private val _security = MutableStateFlow<Map<String, SecurityResult>>(emptyMap())
+    val securityStates: StateFlow<Map<String, SecurityResult>> = _security.asStateFlow()
+
+    private val _securityLoading = MutableStateFlow(false)
+    val securityLoading: StateFlow<Boolean> = _securityLoading.asStateFlow()
+
+    /** دانلود در انتظار تایید کاربر پس از دیدن نتیجه اسکن */
+    private val _securityGate = MutableStateFlow<SecurityGateRequest?>(null)
+    val securityGate: StateFlow<SecurityGateRequest?> = _securityGate.asStateFlow()
+
+    /** لود یک‌باره گزارش اسکن (در باز شدن صفحه اپ و شروع دانلود) */
+    fun ensureSecurityLoaded() {
+        if (_securityLoading.value || _security.value.isNotEmpty()) return
+        _securityLoading.value = true
+        viewModelScope.launch {
+            try {
+                _security.value = SecurityRepository.load().associateBy { it.id }
+            } catch (_: Exception) {
+            } finally {
+                _securityLoading.value = false
+            }
+        }
+    }
+
+    /** به‌جای دانلود مستقیم: اول گیت امنیتی باز می‌شود */
+    fun requestDownload(app: StoreApp, tag: String, asset: GhAsset) {
+        ensureSecurityLoaded()
+        _securityGate.value = SecurityGateRequest(app, tag, asset)
+    }
+
+    /** تایید کاربر پس از دیدن نتیجه اسکن → دانلود */
+    fun confirmGateDownload() {
+        val g = _securityGate.value ?: return
+        _securityGate.value = null
+        download(g.app, g.tag, g.asset)
+    }
+
+    /** کاربر دانلود را رد کرد */
+    fun cancelGate() {
+        _securityGate.value = null
     }
 
     fun cancel(key: String) = ApkDownloader.cancel(key)

@@ -8,20 +8,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.idol.store.data.AuthManager
 import com.idol.store.data.EXTRA_OPEN_APP_ID
 import com.idol.store.data.UpdateChecker
+import com.idol.store.ui.AboutScreen
 import com.idol.store.ui.AdminScreen
 import com.idol.store.ui.AppDetailScreen
 import com.idol.store.ui.AuthViewModel
 import com.idol.store.ui.CategoryAppsScreen
 import com.idol.store.ui.IdolStoreTheme
 import com.idol.store.ui.LoginScreen
+import com.idol.store.ui.PrivacyScreen
 import com.idol.store.ui.Prefs
+import com.idol.store.ui.SecurityGateSheet
 import com.idol.store.ui.StoreTabs
 import com.idol.store.ui.StoreViewModel
+import com.idol.store.ui.TermsScreen
 
 class MainActivity : AppCompatActivity() {
 
@@ -78,6 +83,23 @@ fun StoreApp(
         }
     }
 
+    // صفحات حقوقی و درباره
+    var legalPage by remember { mutableStateOf<String?>(null) }
+    when (legalPage) {
+        "privacy" -> {
+            PrivacyScreen(onBack = { legalPage = null })
+            return
+        }
+        "terms" -> {
+            TermsScreen(onBack = { legalPage = null })
+            return
+        }
+        "about" -> {
+            AboutScreen(onBack = { legalPage = null })
+            return
+        }
+    }
+
     if (vm.adminMode) {
         AdminScreen(onBack = { vm.adminMode = false; vm.refresh() })
         return
@@ -95,5 +117,8 @@ fun StoreApp(
         return
     }
 
-    StoreTabs(vm, onLogout = onLogout)
+    StoreTabs(vm, onLogout = onLogout, onOpenLegal = { legalPage = it })
+
+    // گیت امنیتی: روی همه‌ی صفحات بالا می‌آید
+    SecurityGateSheet(vm)
 }

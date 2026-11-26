@@ -28,8 +28,10 @@ import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Person
@@ -78,10 +80,11 @@ import com.idol.store.R
 import com.idol.store.data.DownloadState
 import com.idol.store.data.StoreApp
 import com.idol.store.data.downloadKey
+import androidx.compose.material.icons.filled.Shield
 
 /** اسکلت اصلی استور با نوار پایین به سبک گوگل‌پلی */
 @Composable
-fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit) {
+fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit, onOpenLegal: (String) -> Unit = {}) {
     var tab by rememberSaveable { mutableStateOf(0) }
 
     // با هر بازگشت به اپ (مثلاً بعد از نصب APK) وضعیت نصب دوباره چک می‌شود
@@ -128,7 +131,7 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit) {
             0 -> HomeTab(vm, onLogout, Modifier.padding(padding), installTick, onGoToSearch = { tab = 1 })
             1 -> SearchTab(vm, Modifier.padding(padding))
             2 -> CategoriesTab(vm, Modifier.padding(padding))
-            else -> YouTab(vm, onLogout, Modifier.padding(padding), installTick)
+            else -> YouTab(vm, onLogout, Modifier.padding(padding), installTick, onOpenLegal)
         }
     }
 }
@@ -377,7 +380,7 @@ private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentSta
         onClick = { vm.selectedApp = app },
         onDownload = {
             if (latest != null) (state as? AppContentState.Ready)?.let {
-                vm.download(app, it.releases.first().tagName, it.universalApk)
+                vm.requestDownload(app, it.releases.first().tagName, it.universalApk)
             }
         },
         onCancel = { latest?.let { vm.cancel(downloadKey(app.id, it.tagName)) } },
@@ -537,7 +540,7 @@ private fun CategoriesTab(vm: StoreViewModel, modifier: Modifier) {
 // ---------------- شما ----------------
 
 @Composable
-private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier, installTick: Int = 0) {
+private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier, installTick: Int = 0, onOpenLegal: (String) -> Unit = {}) {
     val contentMap by vm.content.collectAsState()
     val context = LocalContext.current
     val apps = vm.catalog?.apps.orEmpty()
@@ -707,6 +710,35 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier,
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.logout_account))
                 }
+            }
+        }
+
+        // صفحات حقوقی و درباره
+        item {
+            Column(
+                Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    LegalMiniCard(
+                        icon = Icons.Filled.Shield,
+                        label = stringResource(R.string.legal_privacy_short),
+                        onClick = { onOpenLegal("privacy") },
+                        modifier = Modifier.weight(1f),
+                    )
+                    LegalMiniCard(
+                        icon = Icons.Filled.Description,
+                        label = stringResource(R.string.legal_terms_short),
+                        onClick = { onOpenLegal("terms") },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                LegalMiniCard(
+                    icon = Icons.Filled.Info,
+                    label = stringResource(R.string.legal_about_title),
+                    onClick = { onOpenLegal("about") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
 
