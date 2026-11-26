@@ -41,6 +41,7 @@ import com.idol.store.R
 import com.idol.store.data.SecurityGateStatus
 import com.idol.store.data.SecurityResult
 import com.idol.store.data.gateStatusFor
+import com.idol.store.data.scannedTag
 
 /** کادر رنگی نتیجه اسکن — استایل‌های هر وضعیت */
 private data class GateStyle(val color: Color)
