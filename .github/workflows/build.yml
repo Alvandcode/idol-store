@@ -1,5 +1,9 @@
 name: Build & Release Idol Store
 
+# برای ساخت GitHub Release و اتصال APK به آن
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main, master ]
