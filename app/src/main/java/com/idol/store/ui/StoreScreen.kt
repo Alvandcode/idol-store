@@ -487,7 +487,7 @@ private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentSta
         app = app,
         state = state,
         downloadState = key?.let { states[it] } ?: DownloadState.Idle,
-        installedVersion = installedVersion,
+        installedVersionName = installedVersion,
         installStatus = status,
         onClick = { vm.selectedApp = app },
         onDownload = {
