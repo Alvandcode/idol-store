@@ -177,14 +177,16 @@ private fun IdolBottomBar(
             .navigationBarsPadding()
             .padding(horizontal = 18.dp, vertical = 10.dp),
     ) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalLayoutDirection provides LayoutDirection.Ltr,
+        ) {
         val barWidth = maxWidth
         val itemWidth = barWidth / items.size
         val barHeight = 66.dp
-        val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
-        // لغزش نشانگر با فنر
+        // لغزش نشانگر با فنر (بار همیشه LTR است؛ آینه نمی‌شود)
         val indicatorX by animateDpAsState(
-            targetValue = itemWidth * (if (rtl) (items.size - 1 - selected) else selected),
+            targetValue = itemWidth * selected,
             animationSpec = spring(dampingRatio = 0.72f, stiffness = 320f),
             label = "navIndicator",
         )
@@ -268,6 +270,7 @@ private fun IdolBottomBar(
                     }
                 }
             }
+        }
         }
     }
 }

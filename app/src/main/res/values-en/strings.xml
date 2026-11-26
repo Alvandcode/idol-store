@@ -89,7 +89,7 @@
     <string name="sec_status_warning">Needs review</string>
     <string name="sec_status_warning_sub">Warnings were recorded during the scan. Proceed with caution and review the app permissions after installing.</string>
     <string name="sec_status_incomplete">Scan incomplete</string>
-    <string name="sec_status_incomplete_sub">The scan report is incomplete or failed; there is no proof the file is clean. The decision is yours.</string>
+    <string name="sec_status_incomplete_sub">Some scanners failed (details below). This means no threat was found, but not everything was checked; the decision is yours.</string>
     <string name="sec_status_not_scanned">No scan report available</string>
     <string name="sec_status_not_scanned_sub">No scan has been published for this release yet, or the report is unavailable. The file is unverified.</string>
     <string name="sec_status_dangerous">⛔ Definite threat detected</string>
@@ -98,6 +98,16 @@
     <string name="sec_cancel_btn">Cancel</string>
     <string name="sec_close_btn">Close</string>
     <string name="sec_scanned_version_fmt">Scanned version: %1$s</string>
+    <string name="eng_clamav">Malware scan (ClamAV)</string>
+    <string name="eng_yara">Suspicious patterns (YARA)</string>
+    <string name="eng_dependency">Dependency vulnerabilities</string>
+    <string name="eng_semgrep">Source analysis (Semgrep)</string>
+    <string name="eng_gitleaks">Secrets exposure</string>
+    <string name="eng_assets">APK files</string>
+    <string name="eng_ok">Clean ✓</string>
+    <string name="eng_error">Error ⚠</string>
+    <string name="eng_found">Findings ⚠</string>
+    <string name="eng_threat">Threat!</string>
 
     <string-array name="privacy_items">
         <item>1. What we collect</item>

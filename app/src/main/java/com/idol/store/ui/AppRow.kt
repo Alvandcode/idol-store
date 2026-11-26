@@ -107,6 +107,8 @@ fun cleanReleaseBody(raw: String): String {
     s = s.replace(Regex("\n{3,}"), "\n\n")
     // فاصله‌های تکراری ناشی از جدول‌ها
     s = s.replace(Regex("[ ]{3,}"), "\n")
+    // حذف کامل خطوط خالی: چنج‌لاگ فشرده، خطوط پشت هم و ادامه‌دار
+    s = s.split('\n').map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n")
     return s.trim()
 }
 

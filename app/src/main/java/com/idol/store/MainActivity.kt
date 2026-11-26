@@ -3,6 +3,7 @@ package com.idol.store
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.spring
@@ -49,6 +50,12 @@ class MainActivity : AppCompatActivity() {
         UpdateChecker.ensureScheduled(this)
         setContent {
             IdolStoreTheme {
+                // رنگ محتوا را سراسری تعیین می‌کند تا متن‌های بدون color صریح تیره نشوند
+                androidx.compose.material3.Surface(
+                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.background,
+                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                ) {
                 val auth: AuthViewModel = viewModel()
                 if (loggedIn || auth.loggedIn) {
                     val store: StoreViewModel = viewModel()
@@ -60,6 +67,7 @@ class MainActivity : AppCompatActivity() {
                     )
                 } else {
                     LoginScreen(vm = auth, onLoggedIn = { loggedIn = true })
+                }
                 }
             }
         }

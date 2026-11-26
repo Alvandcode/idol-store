@@ -123,6 +123,8 @@ fun AboutScreen(onBack: () -> Unit) {
             Text(
                 stringResource(R.string.about_device_info_title),
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.height(10.dp))
             Column(
@@ -179,6 +181,7 @@ private fun InfoRow(label: String, value: String) {
         Text(
             value,
             style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             modifier = Modifier.weight(1.4f),

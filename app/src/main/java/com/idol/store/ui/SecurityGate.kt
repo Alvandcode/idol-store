@@ -40,6 +40,7 @@ import androidx.compose.ui.window.Dialog
 import com.idol.store.R
 import com.idol.store.data.SecurityGateStatus
 import com.idol.store.data.SecurityResult
+import com.idol.store.data.engineRows
 import com.idol.store.data.gateStatusFor
 import com.idol.store.data.scannedTag
 
@@ -175,6 +176,10 @@ fun SecurityGateSheet(vm: StoreViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 19.sp,
                         )
+                        if (status == SecurityGateStatus.INCOMPLETE || status == SecurityGateStatus.WARNING) {
+                            Spacer(Modifier.height(8.dp))
+                            EngineBreakdown(report)
+                        }
                         report?.scannedTag?.let {
                             Spacer(Modifier.height(6.dp))
                             Text(
@@ -271,6 +276,59 @@ fun SecurityStatusCard(vm: StoreViewModel, appId: String, tag: String) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (status == SecurityGateStatus.INCOMPLETE || status == SecurityGateStatus.WARNING) {
+                Spacer(Modifier.height(6.dp))
+                EngineBreakdown(report)
+            }
+        }
+    }
+}
+
+/** جدول صریح نتیجه هر اسکن‌ر — برای شفافیت کامل به کاربر */
+@Composable
+fun EngineBreakdown(report: SecurityResult?) {
+    val rows = report?.engineRows() ?: return
+    if (rows.isEmpty()) return
+    val labels = mapOf(
+        "clamav" to stringResource(R.string.eng_clamav),
+        "yara" to stringResource(R.string.eng_yara),
+        "dependency" to stringResource(R.string.eng_dependency),
+        "semgrep" to stringResource(R.string.eng_semgrep),
+        "gitleaks" to stringResource(R.string.eng_gitleaks),
+        "assets" to stringResource(R.string.eng_assets),
+    )
+    val resultOk = stringResource(R.string.eng_ok)
+    val resultErr = stringResource(R.string.eng_error)
+    val resultFound = stringResource(R.string.eng_found)
+    val resultThreat = stringResource(R.string.eng_threat)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        rows.forEach { (key, status) ->
+            val label = labels[key] ?: return@forEach
+            val ok = when (key) {
+                "clamav" -> status in setOf("no_detection", "inspected")
+                "yara" -> status in setOf("no_detection", "no_findings")
+                "dependency" -> status == "no_known_vulnerabilities"
+                "semgrep" -> status == "no_findings"
+                "gitleaks" -> status == "no_findings"
+                "assets" -> status == "no_detection"
+                else -> return@forEach
+            }
+            val (result, color) = when {
+                ok -> resultOk to Color(0xFF16A34A)
+                status == "scan_error" || status == "download_or_scan_error" ->
+                    resultErr to Color(0xFFEA580C)
+                status == "secrets_found" -> resultFound to Color(0xFFD97706)
+                status == "detection" || status == "dangerous" ->
+                    resultThreat to Color(0xFFDC2626)
+                else -> status to Color(0xFF64748B)
+            }
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(label, style = MaterialTheme.typography.bodySmall)
+                Text(result, style = MaterialTheme.typography.labelMedium, color = color)
+            }
         }
     }
 }

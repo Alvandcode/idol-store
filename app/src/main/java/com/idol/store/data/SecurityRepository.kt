@@ -25,9 +25,44 @@ data class SecurityResult(
     @SerialName("overall_status") val overallStatus: String? = null,
     @SerialName("risk_level") val riskLevel: String? = null,
     @SerialName("scan_timestamp") val scanTimestamp: String? = null,
+    @SerialName("source_scan") val sourceScan: SecuritySourceScan? = null,
     @SerialName("scanned_assets") val scannedAssets: List<SecurityAsset> = emptyList(),
     val assets: List<SecurityAsset> = emptyList(),
+    @SerialName("scan_errors") val scanErrors: List<kotlinx.serialization.json.JsonElement> = emptyList(),
 )
+
+/** وضعیت هر موتور اسکن در گزارش */
+@Serializable
+data class SecuritySourceScan(
+    val clamav: SecurityEngineStatus? = null,
+    val yara: SecurityEngineStatus? = null,
+    val dependency: SecurityEngineStatus? = null,
+    val semgrep: SecurityEngineStatus? = null,
+    val gitleaks: SecurityEngineStatus? = null,
+)
+
+@Serializable
+data class SecurityEngineStatus(
+    val status: String? = null,
+)
+
+/** جزئیات یک موتور برای نمایش: (برچسب منبع، وضعیت خام) */
+fun SecurityResult.engineRows(): List<Pair<String, String>> {
+    val rows = mutableListOf<Pair<String, String>>()
+    sourceScan?.let { s ->
+        s.clamav?.status?.let { rows.add("clamav" to it) }
+        s.yara?.status?.let { rows.add("yara" to it) }
+        s.dependency?.status?.let { rows.add("dependency" to it) }
+        s.semgrep?.status?.let { rows.add("semgrep" to it) }
+        s.gitleaks?.status?.let { rows.add("gitleaks" to it) }
+    }
+    val assets = scannedAssets.ifEmpty { assets }
+    if (assets.isNotEmpty()) {
+        val bad = assets.count { it.status != null && it.status != "no_detection" }
+        rows.add("assets" to (if (bad > 0) "download_or_scan_error" else "no_detection"))
+    }
+    return rows
+}
 
 @Serializable
 data class SecurityReleaseRef(
