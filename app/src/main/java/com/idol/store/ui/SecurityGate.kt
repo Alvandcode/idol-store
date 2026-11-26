@@ -219,3 +219,58 @@ fun SecurityGateSheet(vm: StoreViewModel) {
         }
     }
 }
+
+/** نوار وضعیت اسکن روی صفحه اپ — نتیجه بدون نیاز به زدن دانلود دیده می‌شود */
+@Composable
+fun SecurityStatusCard(vm: StoreViewModel, appId: String, tag: String) {
+    val securityMap by vm.securityStates.collectAsState()
+    val loading by vm.securityLoading.collectAsState()
+    val report = securityMap[appId]?.takeIf { it.scannedTag == null || it.scannedTag == tag }
+    val status = when {
+        loading && report == null -> SecurityGateStatus.LOADING
+        report == null -> SecurityGateStatus.NOT_SCANNED
+        else -> report.gateStatusFor(tag)
+    }
+    val style = gateStyle(status)
+
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(style.color.copy(alpha = 0.10f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        when (status) {
+            SecurityGateStatus.LOADING -> CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+                color = style.color,
+            )
+            else -> Icon(
+                imageVector = when (status) {
+                    SecurityGateStatus.SAFE -> Icons.Filled.GppGood
+                    SecurityGateStatus.DANGEROUS -> Icons.Filled.GppBad
+                    SecurityGateStatus.WARNING, SecurityGateStatus.INCOMPLETE -> Icons.Filled.GppMaybe
+                    else -> Icons.Filled.HelpOutline
+                },
+                contentDescription = null,
+                tint = style.color,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(
+                stringResource(gateTitle(status)),
+                style = MaterialTheme.typography.titleSmall,
+                color = style.color,
+            )
+            Text(
+                stringResource(R.string.security_gate_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}

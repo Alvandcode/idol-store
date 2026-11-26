@@ -197,6 +197,11 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
 
                     Spacer(Modifier.height(14.dp))
 
+                    // وضعیت اسکن امنیتی این نسخه — قبل از دانلود دیده می‌شود
+                    SecurityStatusCard(vm = vm, appId = app.id, tag = latest.tagName)
+
+                    Spacer(Modifier.height(14.dp))
+
                     // اعلان بروزرسانی این اپ
                     NotificationToggle(
                         appId = app.id,

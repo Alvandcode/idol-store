@@ -9,12 +9,16 @@ android {
     namespace = "com.idol.store"
     compileSdk = 34
 
+    // نسخه از تگ ریلیز تزریق می‌شود (APP_VERSION_NAME/CODE در CI)؛ پیش‌فرض برای بیلد محلی
+    val appVersionName = (project.findProperty("APP_VERSION_NAME") as String?) ?: "1.0.6"
+    val appVersionCode = (project.findProperty("APP_VERSION_CODE") as String?)?.toIntOrNull() ?: 10006
+
     defaultConfig {
         applicationId = "com.idol.store"
         minSdk = 24 // اندروید ۷ تا ۱۶ پشتیبانی می‌شود
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         // ⬇️ آدرس فهرست اپلیکیشن‌ها (کاتالوگ) را اینجا ست کنید.
         // یک ریپو جدا بسازید (مثلاً idol-store-catalog) و apps.json را داخلش بگذارید.

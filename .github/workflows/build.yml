@@ -36,13 +36,26 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/idol-store.keystore"
 
+      # استخراج نسخه از تگ (v1.0.6 → name=1.0.6, code=10006)
+      - name: Determine version from tag
+        id: ver
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            V="${GITHUB_REF#refs/tags/v}"
+            IFS='.' read -r MAJ MIN PAT <<< "$V"
+            PAT=$(echo "$PAT" | cut -d- -f1)
+            CODE=$((MAJ*10000 + MIN*100 + PAT))
+            echo "name=$V" >> "$GITHUB_OUTPUT"
+            echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build signed APK
         env:
           IDOL_KEYSTORE: ${{ runner.temp }}/idol-store.keystore
           IDOL_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           IDOL_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           IDOL_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: gradle assembleDebug --no-daemon
+        run: gradle assembleDebug --no-daemon "-PAPP_VERSION_NAME=${{ steps.ver.outputs.name || '1.0.6' }}" "-PAPP_VERSION_CODE=${{ steps.ver.outputs.code || '10006' }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
