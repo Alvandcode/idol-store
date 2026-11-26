@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.idol.store"
-        minSdk = 26
+        minSdk = 24 // اندروید ۷ تا ۱۶ پشتیبانی می‌شود
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"

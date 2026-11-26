@@ -7,6 +7,13 @@
     <!-- برای اعلان بروزرسانی (اندروید 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- تشخیص نصب‌بودن اپ‌ها (Package Visibility؛ اندروید 10+) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
