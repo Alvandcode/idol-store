@@ -59,7 +59,7 @@
     <string name="you_stats_installed">%1$d installed</string>
 
     <!-- Legal & About pages -->
-    <string name="legal_privacy_title">Privacy &amp; Security</string>
+    <string name="legal_privacy_title">Privacy and Security</string>
     <string name="legal_terms_title">Terms of Use</string>
     <string name="legal_about_title">About the app</string>
     <string name="legal_privacy_short">Privacy</string>
@@ -84,7 +84,7 @@
     <string name="sec_status_safe">No threats detected</string>
     <string name="sec_status_safe_sub">All scanners ran and found nothing suspicious. This is not an absolute guarantee, but no warnings were recorded.</string>
     <string name="sec_status_warning">Needs review</string>
-    <string name="sec_status_warning_sub">Warnings were recorded during the scan. Proceed with caution and review the app&apos;s permissions after installing.</string>
+    <string name="sec_status_warning_sub">Warnings were recorded during the scan. Proceed with caution and review the app's permissions after installing.</string>
     <string name="sec_status_incomplete">Scan incomplete</string>
     <string name="sec_status_incomplete_sub">The scan report is incomplete or failed; there is no proof the file is clean. The decision is yours.</string>
     <string name="sec_status_not_scanned">No scan report available</string>
@@ -99,12 +99,12 @@
     <string-array name="privacy_items">
         <item>1. What we collect</item>
         <item>Idol Store has no central server and stores none of your data on our side. The only data processed is: public GitHub repository and release information (name, description, icon and APK file), app install status kept only on this device, and — for admin sign-in — the GitHub token, which is stored exclusively in encrypted storage on the device itself.</item>
-        <item>2. Account &amp; email</item>
-        <item>For registration, your email is never stored in plain text; only a salted hash (SHA-256) of it is written to the public users.json file on GitHub. Your device token is also hashed and derived from this device&apos;s fingerprint, so the stored data cannot be reversed into your real email or token.</item>
+        <item>2. Account and email</item>
+        <item>For registration, your email is never stored in plain text; only a salted hash (SHA-256) of it is written to the public users.json file on GitHub. Your device token is also hashed and derived from this device's fingerprint, so the stored data cannot be reversed into your real email or token.</item>
         <item>3. Network connections</item>
         <item>The app connects only to official GitHub services (api.github.com and raw.githubusercontent.com) and downloads APK files directly from GitHub servers. No data is sent to any other server or service, and your data is never used for advertising or sold.</item>
         <item>4. Notifications</item>
-        <item>Update notifications are enabled only for apps you explicitly opt in to from that app&apos;s page. Notification content is built solely from public GitHub release information.</item>
+        <item>Update notifications are enabled only for apps you explicitly opt in to from that app's page. Notification content is built solely from public GitHub release information.</item>
         <item>5. Data deletion</item>
         <item>Signing out wipes local tokens from device storage. To fully delete your registration record, contact the developer via email or Telegram and your hashed record will be removed from users.json.</item>
     </string-array>
@@ -113,9 +113,9 @@
         <item>1. Nature of the service</item>
         <item>Idol Store is a personal app catalog that displays apps, versions and installable files from public GitHub release pages and enables direct download and installation. The app is free of charge and reselling it is not permitted.</item>
         <item>2. Content responsibility</item>
-        <item>The publisher of each app is solely responsible for its licensing, correctness and security. Idol Store is only a display and download interface and does not produce or officially security-review the listed apps. Check an app&apos;s permissions before installing it.</item>
+        <item>The publisher of each app is solely responsible for its licensing, correctness and security. Idol Store is only a display and download interface and does not produce or officially security-review the listed apps. Check an app's permissions before installing it.</item>
         <item>3. Permitted use</item>
-        <item>Use of this app must comply with applicable law, GitHub&apos;s terms of service and the intellectual-property rights of developers. Illegal use, attempts to bypass the registration system, or redistributing downloaded files as your own product is prohibited.</item>
+        <item>Use of this app must comply with applicable law, GitHub's terms of service and the intellectual-property rights of developers. Illegal use, attempts to bypass the registration system, or redistributing downloaded files as your own product is prohibited.</item>
         <item>4. Accounts</item>
         <item>Each device may be registered with exactly one email and each email with exactly one device. Attempting duplicate registrations, sharing tokens, or abusing admin access results in access revocation.</item>
         <item>5. No warranty</item>
