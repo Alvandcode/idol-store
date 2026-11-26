@@ -4,6 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,6 +71,15 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+/** صفحات اصلی برای انیمیشن گذار */
+private sealed interface Screen {
+    data object Tabs : Screen
+    data object Admin : Screen
+    data class Detail(val app: com.idol.store.data.StoreApp) : Screen
+    data class Category(val key: String) : Screen
+    data class Legal(val page: String) : Screen
+}
+
 @Composable
 fun StoreApp(
     vm: StoreViewModel,
@@ -85,39 +101,38 @@ fun StoreApp(
 
     // صفحات حقوقی و درباره
     var legalPage by remember { mutableStateOf<String?>(null) }
-    when (legalPage) {
-        "privacy" -> {
-            PrivacyScreen(onBack = { legalPage = null })
-            return
+
+    // صفحه فعلی برای انیمیشن نرم بین صفحات
+    val screen: Screen = when {
+        legalPage != null -> Screen.Legal(legalPage!!)
+        vm.adminMode -> Screen.Admin
+        vm.selectedApp != null -> Screen.Detail(vm.selectedApp!!)
+        vm.openCategory != null -> Screen.Category(vm.openCategory!!)
+        else -> Screen.Tabs
+    }
+
+    AnimatedContent(
+        targetState = screen,
+        transitionSpec = {
+            // ورود نرم: بالا آمدن محو با فنر؛ خروج سریع محو
+            (slideInVertically(spring(dampingRatio = 0.85f, stiffness = 380f)) { it / 10 } +
+                fadeIn(spring(dampingRatio = 0.85f, stiffness = 380f)))
+                .togetherWith(fadeOut(tween(120)))
+        },
+        label = "screenTransition",
+    ) { scr ->
+        when (scr) {
+            is Screen.Legal -> when (scr.page) {
+                "privacy" -> PrivacyScreen(onBack = { legalPage = null })
+                "terms" -> TermsScreen(onBack = { legalPage = null })
+                else -> AboutScreen(onBack = { legalPage = null })
+            }
+            is Screen.Admin -> AdminScreen(onBack = { vm.adminMode = false; vm.refresh() })
+            is Screen.Detail -> AppDetailScreen(vm = vm, app = scr.app, onBack = { vm.selectedApp = null })
+            is Screen.Category -> CategoryAppsScreen(vm = vm, key = scr.key, onBack = { vm.openCategory = null })
+            Screen.Tabs -> StoreTabs(vm, onLogout = onLogout, onOpenLegal = { legalPage = it })
         }
-        "terms" -> {
-            TermsScreen(onBack = { legalPage = null })
-            return
-        }
-        "about" -> {
-            AboutScreen(onBack = { legalPage = null })
-            return
-        }
     }
-
-    if (vm.adminMode) {
-        AdminScreen(onBack = { vm.adminMode = false; vm.refresh() })
-        return
-    }
-
-    val selected = vm.selectedApp
-    if (selected != null) {
-        AppDetailScreen(vm = vm, app = selected, onBack = { vm.selectedApp = null })
-        return
-    }
-
-    val category = vm.openCategory
-    if (category != null) {
-        CategoryAppsScreen(vm = vm, key = category, onBack = { vm.openCategory = null })
-        return
-    }
-
-    StoreTabs(vm, onLogout = onLogout, onOpenLegal = { legalPage = it })
 
     // گیت امنیتی: روی همه‌ی صفحات بالا می‌آید
     SecurityGateSheet(vm)

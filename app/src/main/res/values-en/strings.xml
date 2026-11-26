@@ -13,7 +13,7 @@
     <string name="cancel_download">Cancel</string>
     <string name="install">Install</string>
     <string name="download">Download</string>
-    <string name="btn_installed">Installed ✓</string>
+    <string name="btn_installed">Updated ✓</string>
     <string name="btn_update">Update</string>
     <string name="admin_quick_title">Quick add</string>
     <string name="admin_quick_hint">Paste a repo link or owner/repo; I fetch the rest from GitHub</string>

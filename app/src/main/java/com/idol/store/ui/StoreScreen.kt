@@ -126,11 +126,20 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit, onOpenLegal: (String) ->
             )
         },
     ) { padding ->
-        when (tab) {
+        androidx.compose.animation.AnimatedContent(
+            targetState = tab,
+            transitionSpec = {
+                androidx.compose.animation.fadeIn(androidx.compose.animation.core.spring(dampingRatio = 0.85f, stiffness = 380f))
+                    .togetherWith(androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100)))
+            },
+            label = "tabTransition",
+        ) { t ->
+        when (t) {
             0 -> HomeTab(vm, onLogout, Modifier.padding(padding), installTick, onGoToSearch = { tab = 1 })
             1 -> SearchTab(vm, Modifier.padding(padding))
             2 -> CategoriesTab(vm, Modifier.padding(padding))
             else -> YouTab(vm, onLogout, Modifier.padding(padding), installTick, onOpenLegal)
+        }
         }
     }
 }

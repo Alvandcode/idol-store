@@ -14,7 +14,7 @@
     <string name="cancel_download">لغو</string>
     <string name="install">نصب</string>
     <string name="download">دانلود</string>
-    <string name="btn_installed">نصب شده ✓</string>
+    <string name="btn_installed">به‌روز است ✓</string>
     <string name="btn_update">به‌روزرسانی</string>
     <string name="admin_quick_title">افزودن سریع</string>
     <string name="admin_quick_hint">لینک ریپو یا owner/repo را بده؛ بقیه را خودم از گیت‌هاب می‌گیرم</string>
