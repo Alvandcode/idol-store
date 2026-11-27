@@ -39,7 +39,13 @@ class GitHubService(private val tokenProvider: () -> String?) {
         val builder = Request.Builder().url(url)
             .header("Accept", "application/vnd.github+json")
         tokenProvider()?.takeIf { it.isNotBlank() }?.let { builder.header("Authorization", "Bearer $it") }
-        client.newCall(builder.method(method, null).build()).execute().use { it.code }
+        // PUT بدون RequestBody در OkHttp استثنا می‌اندازد → ستاره‌دادن هرگز ثبت نمی‌شد
+        if (method == "PUT") {
+            builder.put(ByteArray(0).toRequestBody())
+        } else {
+            builder.delete()
+        }
+        client.newCall(builder.build()).execute().use { it.code }
     }
 
     /** ریلیزهای پایدار (بدون draft و prerelease) — جدیدترین اول */

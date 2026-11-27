@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -170,15 +171,32 @@ fun SecurityGateSheet(vm: StoreViewModel) {
                             }
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            stringResource(gateSubtitle(status)),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 19.sp,
-                        )
                         if (status == SecurityGateStatus.INCOMPLETE || status == SecurityGateStatus.WARNING) {
+                            // توضیح = فقط شمارش مثبت/منفی (درصد و ردیف‌ها در ادامه)
+                            val sc = scanScore(report)
+                            if (sc != null && sc.total > 0) {
+                                Text(
+                                    stringResource(R.string.sec_counts_fmt, sc.clean, sc.threat + sc.error),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                Text(
+                                    stringResource(gateSubtitle(status)),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 19.sp,
+                                )
+                            }
                             Spacer(Modifier.height(8.dp))
                             EngineBreakdown(report)
+                        } else {
+                            Text(
+                                stringResource(gateSubtitle(status)),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 19.sp,
+                            )
                         }
                         report?.scannedTag?.let {
                             Spacer(Modifier.height(6.dp))
@@ -284,37 +302,98 @@ fun SecurityStatusCard(vm: StoreViewModel, appId: String, tag: String) {
     }
 }
 
+/** امتیاز اسکن: سهم بررسی‌هایی که پاک بودند از کل، به درصد */
+private data class ScanScore(val clean: Int, val threat: Int, val error: Int) {
+    val total: Int get() = clean + threat + error
+    val pct: Int get() = if (total == 0) 0 else clean * 100 / total
+}
+
+private fun engineIsClean(key: String, status: String): Boolean = when (key) {
+    "clamav" -> status in setOf("no_detection", "inspected")
+    "yara" -> status in setOf("no_detection", "no_findings")
+    "dependency" -> status == "no_known_vulnerabilities"
+    "semgrep" -> status == "no_findings"
+    "gitleaks" -> status == "no_findings"
+    "assets" -> status == "no_detection"
+    else -> false
+}
+
+private fun scanScore(report: SecurityResult?): ScanScore? {
+    val rows = report?.engineRows() ?: return null
+    if (rows.isEmpty()) return null
+    var clean = 0
+    var threat = 0
+    var error = 0
+    rows.forEach { (key, status) ->
+        when {
+            engineIsClean(key, status) -> clean++
+            status == "detection" || status == "dangerous" || status == "secrets_found" -> threat++
+            else -> error++
+        }
+    }
+    return ScanScore(clean, threat, error)
+}
+
 /** جدول صریح نتیجه هر اسکن‌ر — برای شفافیت کامل به کاربر */
 @Composable
 fun EngineBreakdown(report: SecurityResult?) {
     val rows = report?.engineRows() ?: return
     if (rows.isEmpty()) return
-    val labels = mapOf(
-        "clamav" to stringResource(R.string.eng_clamav),
-        "yara" to stringResource(R.string.eng_yara),
-        "dependency" to stringResource(R.string.eng_dependency),
-        "semgrep" to stringResource(R.string.eng_semgrep),
-        "gitleaks" to stringResource(R.string.eng_gitleaks),
-        "assets" to stringResource(R.string.eng_assets),
-    )
-    val resultOk = stringResource(R.string.eng_ok)
-    val resultErr = stringResource(R.string.eng_error)
-    val resultFound = stringResource(R.string.eng_found)
-    val resultThreat = stringResource(R.string.eng_threat)
+    val score = scanScore(report)
+
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        // ---- امتیاز درصدی + شمارش مثبت/منفی ----
+        if (score != null && score.total > 0) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.sec_score_fmt, score.pct),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = when {
+                        score.pct == 100 -> Color(0xFF16A34A)
+                        score.pct >= 50 -> Color(0xFFD97706)
+                        else -> Color(0xFFEA580C)
+                    },
+                )
+                Text(
+                    stringResource(R.string.sec_counts_fmt, score.clean, score.threat + score.error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(2.dp))
+            LinearProgressIndicator(
+                progress = { score.pct / 100f },
+                modifier = Modifier.fillMaxWidth(),
+                color = when {
+                    score.pct == 100 -> Color(0xFF16A34A)
+                    score.pct >= 50 -> Color(0xFFD97706)
+                    else -> Color(0xFFEA580C)
+                },
+                trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+
+        val labels = mapOf(
+            "clamav" to stringResource(R.string.eng_clamav),
+            "yara" to stringResource(R.string.eng_yara),
+            "dependency" to stringResource(R.string.eng_dependency),
+            "semgrep" to stringResource(R.string.eng_semgrep),
+            "gitleaks" to stringResource(R.string.eng_gitleaks),
+            "assets" to stringResource(R.string.eng_assets),
+        )
+        val resultOk = stringResource(R.string.eng_ok)
+        val resultErr = stringResource(R.string.eng_error)
+        val resultFound = stringResource(R.string.eng_found)
+        val resultThreat = stringResource(R.string.eng_threat)
         rows.forEach { (key, status) ->
             val label = labels[key] ?: return@forEach
-            val ok = when (key) {
-                "clamav" -> status in setOf("no_detection", "inspected")
-                "yara" -> status in setOf("no_detection", "no_findings")
-                "dependency" -> status == "no_known_vulnerabilities"
-                "semgrep" -> status == "no_findings"
-                "gitleaks" -> status == "no_findings"
-                "assets" -> status == "no_detection"
-                else -> return@forEach
-            }
             val (result, color) = when {
-                ok -> resultOk to Color(0xFF16A34A)
+                engineIsClean(key, status) -> resultOk to Color(0xFF16A34A)
                 status == "scan_error" || status == "download_or_scan_error" ->
                     resultErr to Color(0xFFEA580C)
                 status == "secrets_found" -> resultFound to Color(0xFFD97706)

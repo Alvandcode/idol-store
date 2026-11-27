@@ -89,6 +89,8 @@
     <string name="sec_status_safe">تهدیدی شناسایی نشد</string>
     <string name="sec_status_safe_sub">اسکن‌رها اجرا شدند و مورد مشکوکی پیدا نشد. این نتیجه ضمانت مطلق سلامت نیست، ولی هیچ هشداری ثبت نشده است.</string>
     <string name="sec_status_warning">نیازمند بازبینی</string>
+    <string name="sec_score_fmt">امتیاز اسکن: %1$d%%</string>
+    <string name="sec_counts_fmt">پاک: %1$d · منفی: %2$d</string>
     <string name="sec_status_warning_sub">هشدارهایی در اسکن ثبت شده است. در صورت ادامه، با احتیاط عمل کن و مجوزهای اپ را بعد از نصب بررسی کن.</string>
     <string name="sec_status_incomplete">اسکن کامل نشده</string>
     <string name="sec_status_incomplete_sub">بعضی اسکن‌رها خطا خوردند (جزئیات پایین). این یعنی تهدیدی پیدا نشده ولی هنوز همه‌چیز بررسی نشده؛ تصمیم با توست.</string>
