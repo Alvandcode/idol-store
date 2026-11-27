@@ -85,6 +85,14 @@ android {
         }
     }
 
+    // نام فایل خروجی: idolstore-<version>.apk (مثل idolstore-1.0.10.apk)
+    applicationVariants.all {
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "idolstore-$appVersionName.apk"
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
