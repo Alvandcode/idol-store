@@ -207,13 +207,12 @@
     <string name="admin_publish_btn">انتشار در گیت‌هاب (کامیت apps.json)</string>
     <string name="admin_local_note">ذخیره فقط در حافظه داخلی است؛ با دکمه «انتشار در گیت‌هاب» به‌صورت کامیت منتشر می‌شود.</string>
     <string name="admin_no_access">دسترسی مدیریت نداری. توکن باید دسترسی push به ریپوی کاتالوگ داشته باشد.</string>
-    <string name="admin_code_title">کد تایید سازنده</string>
-    <string name="admin_code_hint">برای ورود، کد ۶ رقمی‌ای که سازنده به تو داده را وارد کن</string>
-    <string name="admin_code_wrong">کد اشتباه است. کد هر روز عوض می‌شود؛ از سازنده جدیدش را بگیر.</string>
     <string name="admin_awaiting_title">در انتظار تایید سازنده</string>
-    <string name="admin_awaiting_body">توکن تو معتبر است اما هنوز به‌عنوان ادمین ثبت نشده‌ای. درخواستت برای سازنده ارسال شد؛ او دسترسی‌هایت را تعیین می‌کند و کد ورود را به تو می‌دهد.</string>
+    <string name="admin_awaiting_body">توکن تو معتبر است، اما هنوز تایید نشده‌ای. درخواستت برای سازنده ارسال شد؛ وقتی او لینک تایید را باز کند و دسترسی‌هایت را تعیین کند، این صفحه خودکار به پنل مدیریت تبدیل می‌شود.</string>
     <string name="admin_request_send">ارسال درخواست به سازنده</string>
     <string name="admin_request_sent">درخواست ارسال شد ✓ سازنده با اعلان ایمیلی مطلع می‌شود.</string>
+    <string name="admin_check_again">بررسی دوباره</string>
+    <string name="admin_approval_open">باز کردن لینک تایید</string>
     <string name="admin_login_ok">ورود تایید شد ✓</string>
     <string name="admin_registry_saved">تغییرات ادمین‌ها ذخیره و کامیت شد ✓</string>
     <string name="admin_registry_fail">ذخیره نشد: %1$s</string>

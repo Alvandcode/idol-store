@@ -6,6 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -108,16 +109,35 @@ class GitHubService(private val tokenProvider: () -> String?) {
         @Serializable
         private data class IssueRequest(val title: String, val body: String)
 
-        /** ساخت issue برای درخواست ورود ادمین — مالک با اعلان ایمیلی گیت‌هاب خبردار می‌شود */
-        suspend fun createIssue(repo: String, title: String, body: String, token: String): Boolean {
+        /** ساخت issue برای درخواست ورود ادمین — مالک با اعلان ایمیلی گیت‌هاب خبردار می‌شود؛ شماره issue برمی‌گردد */
+        suspend fun createIssue(repo: String, title: String, body: String, token: String): Pair<Boolean, Int> {
             val payload = json.encodeToString(
                 IssueRequest.serializer(),
                 IssueRequest(title, body),
             )
-            val (code, _) = fetch(
+            val (code, respBody) = fetch(
                 "https://api.github.com/repos/$repo/issues", token, method = "POST", bodyJson = payload
             )
-            return code in 200..201
+            val number = try {
+                val el = kotlinx.serialization.json.Json.parseToJsonElement(respBody).jsonObject
+                (el["number"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
+            } catch (_: Exception) { null }
+            return Pair(code in 200..201, number ?: -1)
+        }
+
+        @Serializable
+        private data class IssueUpdate(val state: String)
+
+        /** بستن issue (مثلاً بعد از تایید ادمین) */
+        suspend fun closeIssue(repo: String, number: Int, token: String): Boolean {
+            val payload = json.encodeToString(
+                IssueUpdate.serializer(),
+                IssueUpdate("closed"),
+            )
+            val (code, _) = fetch(
+                "https://api.github.com/repos/$repo/issues/$number", token, method = "PATCH", bodyJson = payload
+            )
+            return code == 200
         }
 
         /** درخواست‌های باز ادمین: (login، شماره issue) — از تیتر [admin-access] */

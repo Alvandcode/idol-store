@@ -9,8 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.idol.store.BuildConfig
 import com.idol.store.R
 import com.idol.store.data.AdminAccess
-import com.idol.store.data.AdminCode
 import com.idol.store.data.AdminEntry
+import java.net.URLEncoder
 import com.idol.store.data.AdminPermissions
 import com.idol.store.data.AdminRegistry
 import com.idol.store.data.AdminRegistryStore
@@ -49,11 +49,6 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         private set
     /** دسترسی‌های این ادمین؛ خالی = فقط وارد شده ولی هیچ دسترسی ندارد */
     var permissions by mutableStateOf<Set<String>>(emptySet())
-        private set
-    /** ورود ادمین نیازمند کد روزانه‌ی مالک است */
-    var needsCode by mutableStateOf(false)
-        private set
-    var codeError by mutableStateOf(false)
         private set
     /** لاگین دارای push است ولی هنوز در لیست ادمین‌ها نیست → در انتظار تایید مالک */
     var awaitingApproval by mutableStateOf(false)
@@ -214,9 +209,9 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                     permissions = AdminPermissions.ALL.toSet()
                     allowed = pushOk
                 } else if (entry != null && pushOk) {
-                    // ادمین تایید‌شده: ورود با کد روزانه‌ی مالک
-                    allowed = false
-                    needsCode = true
+                    // ادمین تاییدشده توسط مالک: ورود همیشگی با دسترسی‌های تعیین‌شده
+                    allowed = true
+                    awaitingApproval = false
                     permissions = entry.permissions.toSet()
                 } else if (pushOk) {
                     // دسترسی push دارد ولی ادمین نیست: در انتظار تایید و تعیین دسترسی مالک
@@ -226,7 +221,7 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     allowed = false
                 }
-                if (!allowed && !needsCode && !awaitingApproval) {
+                if (!allowed && !awaitingApproval) {
                     globalError = ctx.getString(R.string.admin_no_access)
                 }
             } catch (e: Exception) {
@@ -237,19 +232,17 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** ادمین کد روزانه را وارد می‌کند — مالک آن را از اعلان/پنل خودش می‌گیرد */
-    fun submitCode(code: String) {
-        val ctx = getApplication<Application>()
-        codeError = false
-        val expected = login?.let { AdminCode.forLogin(it, BuildConfig.REG_SECRET) }
-        if (expected != null && code.trim() == expected) {
-            needsCode = false
-            awaitingApproval = false
-            allowed = true
-            message = ctx.getString(R.string.admin_login_ok)
-        } else {
-            codeError = true
-        }
+    /**
+     * لینک تایید برای مالک: باز کردنش یک issue آماده «[admin-approve]» می‌سازد؛
+     * ربات کاتالوگ همان را پردازش می‌کند و ادمین را با دسترسی‌ها ثبت می‌کند.
+     */
+    fun approvalLink(loginName: String, perms: List<String> = listOf(AdminPermissions.MANAGE_APPS)): String {
+        val repo = BuildConfig.REGISTRY_ISSUE_REPO
+        val title = "[admin-approve] login=$loginName perms=${perms.joinToString(",")}"
+        val body = "Approve admin $loginName with: ${perms.joinToString(", ")}\n(درخواست اولیه: [admin-access] $loginName)"
+        val q = "?title=" + URLEncoder.encode(title, "UTF-8") +
+            "&body=" + URLEncoder.encode(body, "UTF-8")
+        return "https://github.com/$repo/issues/new$q"
     }
 
     /** ارسال درخواست ورود: issue در ریپوی رجیستری → مالک اعلان ایمیلی می‌گیرد */
@@ -257,22 +250,67 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         val l = login ?: return
         viewModelScope.launch {
             try {
-                val ok = GitHubService.createIssue(
+                val link = approvalLink(l)
+                val (ok, num) = GitHubService.createIssue(
                     repo = BuildConfig.REGISTRY_ISSUE_REPO,
                     title = "[admin-access] $l",
-                    body = "Admin login request from device app.\nlogin: $l\ndate: ${AdminCode.today()}",
+                    body = "Admin login request from device app.\n\nlogin: $l\n\n" +
+                        "**--- تایید (برای سازنده) ---**\n" +
+                        "لینک تایید با دسترسی «مدیریت اپ»:\n\n$link\n\n" +
+                        "بعد از باز کردن لینک و ثبت issue، ربات ادمین را اضافه می‌کند و دستگاه ادمین خودکار وارد می‌شود.",
                     token = AuthManager.token(getApplication()) ?: "",
                 )
                 requestSent = ok
+                if (ok) requestIssueNumber = num
             } catch (_: Exception) {
                 requestSent = false
             }
         }
+        startApprovalPolling()
     }
 
-    /** کد ورود امروز برای یک لاگین — فقط برای نمایش به مالک */
-    fun codeFor(loginName: String): String =
-        AdminCode.forLogin(loginName, BuildConfig.REG_SECRET)
+    /** در انتظار تایید: هر ۱۵ ثانیه admins.json چک می‌شود؛ با تایید، پنل باز می‌شود */
+    private fun startApprovalPolling() {
+        if (approvalPolling) return
+        approvalPolling = true
+        viewModelScope.launch {
+            while (awaitingApproval) {
+                kotlinx.coroutines.delay(15_000)
+                if (!awaitingApproval) break
+                try {
+                    val reg = AdminRegistryStore.load(BuildConfig.CATALOG_REPO)
+                    val entry = reg?.admins?.firstOrNull {
+                        it.login.equals(login, ignoreCase = true)
+                    }
+                    if (entry != null) {
+                        // تایید شد: issue درخواست را هم ببند
+                        requestIssueNumber?.let { n ->
+                            runCatching {
+                                GitHubService.closeIssue(
+                                    BuildConfig.REGISTRY_ISSUE_REPO,
+                                    n,
+                                    AuthManager.token(getApplication()) ?: "",
+                                )
+                            }
+                        }
+                        requestIssueNumber = null
+                        registry = reg
+                        isOwner = false
+                        permissions = entry.permissions.toSet()
+                        awaitingApproval = false
+                        allowed = true
+                        message = getApplication<Application>().getString(R.string.admin_login_ok)
+                    }
+                } catch (_: Exception) {
+                }
+            }
+            approvalPolling = false
+        }
+    }
+
+    private var approvalPolling = false
+    var requestIssueNumber by mutableStateOf<Int?>(null)
+        private set
 
     /** درخواست‌های باز ورود ادمین — فقط برای مالک */
     fun loadPendingRequests() {
@@ -301,14 +339,14 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 val updated = if (reg.admins.any { it.login.equals(loginName, ignoreCase = true) }) {
                     reg.copy(admins = reg.admins.map {
                         if (it.login.equals(loginName, ignoreCase = true))
-                            it.copy(permissions = perms, addedAt = AdminCode.today())
+                            it.copy(permissions = perms, addedAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()))
                         else it
                     })
                 } else {
                     reg.copy(admins = reg.admins + AdminEntry(
                         login = loginName.trim(),
                         permissions = perms,
-                        addedAt = AdminCode.today(),
+                        addedAt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()),
                     ))
                 }
                 AdminRegistryStore.save(BuildConfig.CATALOG_REPO, updated, token)

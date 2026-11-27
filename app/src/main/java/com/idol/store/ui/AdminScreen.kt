@@ -58,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -163,7 +164,6 @@ fun AdminScreen(onBack: () -> Unit) {
 /** حالت‌های عدم ورود: کد تایید / انتظار تایید مالک / دسترسی ندارد */
 @Composable
 private fun AdminDeniedView(vm: AdminViewModel, onBack: () -> Unit) {
-    var code by remember { mutableStateOf("") }
     Column(
         Modifier
             .fillMaxSize()
@@ -172,47 +172,6 @@ private fun AdminDeniedView(vm: AdminViewModel, onBack: () -> Unit) {
         verticalArrangement = Arrangement.Center,
     ) {
         when {
-            vm.needsCode -> {
-                Icon(Icons.Filled.Lock, contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    stringResource(R.string.admin_code_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    stringResource(R.string.admin_code_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(14.dp))
-                OutlinedTextField(
-                    value = code,
-                    onValueChange = {
-                        if (it.length <= 6 && it.all { c -> c.isDigit() }) code = it
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = vm.codeError,
-                    textStyle = MaterialTheme.typography.titleLarge,
-                    supportingText = {
-                        if (vm.codeError) Text(
-                            stringResource(R.string.admin_code_wrong),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    },
-                )
-                Spacer(Modifier.height(10.dp))
-                Button(
-                    onClick = { vm.submitCode(code) },
-                    enabled = code.length == 6,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(stringResource(R.string.ok)) }
-            }
-
             vm.awaitingApproval -> {
                 Text(
                     "⏳ " + stringResource(R.string.admin_awaiting_title),
@@ -241,6 +200,11 @@ private fun AdminDeniedView(vm: AdminViewModel, onBack: () -> Unit) {
                     }
                     Spacer(Modifier.height(8.dp))
                 }
+                // بررسی دستی هم امکان‌پذیر است (پولینگ خودکار هر ۱۵ ثانیه فعال است)
+                OutlinedButton(onClick = { vm.reload() }) {
+                    Text(stringResource(R.string.admin_check_again))
+                }
+                Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
             }
 
@@ -378,41 +342,31 @@ private fun OwnerAdminsSection(vm: AdminViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
+            val context = LocalContext.current
             vm.pendingRequests.forEach { (login, _) ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(login, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                    TextButton(onClick = {
-                        vm.addAdmin(login, listOf(AdminPermissions.MANAGE_APPS))
-                    }) {
-                        Text(stringResource(R.string.admin_pending_approve))
+                Column {
+                    Text(login, style = MaterialTheme.typography.bodyMedium)
+                    Row {
+                        TextButton(onClick = {
+                            vm.addAdmin(login, listOf(AdminPermissions.MANAGE_APPS))
+                        }) {
+                            Text(stringResource(R.string.admin_pending_approve))
+                        }
+                        TextButton(onClick = {
+                            // باز کردن لینک تایید: issue آماده [admin-approve] می‌سازد
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse(vm.approvalLink(login)),
+                            )
+                            runCatching { context.startActivity(intent) }
+                        }) {
+                            Text(stringResource(R.string.admin_approval_open))
+                        }
                     }
                 }
             }
         }
 
-        // کدهای ورود امروز
-        HorizontalDivider()
-        Text(
-            stringResource(R.string.admin_codes_title),
-            style = MaterialTheme.typography.titleSmall,
-        )
-        Text(
-            stringResource(R.string.admin_codes_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        val logins = (vm.registry?.admins?.map { it.login }.orEmpty())
-        logins.forEach { l ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(l, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    vm.codeFor(l),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
     }
 }
 
