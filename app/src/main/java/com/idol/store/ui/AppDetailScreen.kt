@@ -82,7 +82,17 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
     val states by vm.downloadStates.collectAsState()
     val contentMap by vm.content.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
-    val installedVersion = vm.installedVersionName(app)
+    // با برگشت از نصب سیستم، وضعیت نصب دوباره محاسبه می‌شود
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) vm.notifyResumed()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val installTick = vm.installTick
+    val installedVersion = if (installTick >= 0) vm.installedVersionName(app) else null
     val context = LocalContext.current
 
     Scaffold(

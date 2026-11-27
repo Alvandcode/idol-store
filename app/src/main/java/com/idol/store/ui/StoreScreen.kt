@@ -105,15 +105,15 @@ fun StoreTabs(vm: StoreViewModel, onLogout: () -> Unit, onOpenLegal: (String) ->
     var tab by rememberSaveable { mutableStateOf(0) }
 
     // با هر بازگشت به اپ (مثلاً بعد از نصب APK) وضعیت نصب دوباره چک می‌شود
-    var installTick by rememberSaveable { mutableStateOf(0) }
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) installTick++
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) vm.notifyResumed()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
+    val installTick = vm.installTick
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,

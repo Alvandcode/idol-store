@@ -289,11 +289,21 @@ fun DownloadButton(
             }
 
         is DownloadState.Ready ->
-            Button(
-                onClick = onInstall,
-                contentPadding = CompactButtonPadding,
-                modifier = Modifier.heightIn(min = 34.dp),
-            ) { Text(stringResource(R.string.install), style = MaterialTheme.typography.labelMedium) }
+            // اگر همان نسخه نصب شده، دکمه نصب غیرفعال می‌شود
+            if (installStatus == InstallStatus.UP_TO_DATE) {
+                OutlinedButton(
+                    enabled = false,
+                    onClick = {},
+                    contentPadding = CompactButtonPadding,
+                    modifier = Modifier.heightIn(min = 34.dp),
+                ) { Text(stringResource(R.string.btn_installed), style = MaterialTheme.typography.labelMedium) }
+            } else {
+                Button(
+                    onClick = onInstall,
+                    contentPadding = CompactButtonPadding,
+                    modifier = Modifier.heightIn(min = 34.dp),
+                ) { Text(stringResource(R.string.install), style = MaterialTheme.typography.labelMedium) }
+            }
 
         is DownloadState.Failed ->
             Column(horizontalAlignment = Alignment.End) {

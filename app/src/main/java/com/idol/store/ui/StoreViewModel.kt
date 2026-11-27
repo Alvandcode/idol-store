@@ -296,6 +296,14 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** با هر برگشت به اپ (مثلاً بعد از پایان نصب سیستم) وضعیت نصب دوباره چک می‌شود */
+    var installTick by mutableStateOf(0)
+        private set
+
+    fun notifyResumed() {
+        installTick++
+    }
+
     fun logout(onDone: () -> Unit) {
         AuthManager.clear(getApplication())
         onDone()
