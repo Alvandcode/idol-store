@@ -28,7 +28,13 @@ sealed interface DownloadState {
  */
 object ApkDownloader {
 
-    private val client = OkHttpClient()
+    /** تایم‌اوت سخاوتمند: شبکه‌های ناپایدار نباید دانلود را بیندازند */
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
+        .build()
     private val scope = CoroutineScope(Dispatchers.Default)
     private val jobs = HashMap<String, Job>()
 
@@ -46,22 +52,37 @@ object ApkDownloader {
                 dir.mkdirs()
                 val file = File(dir, fileName)
 
-                val request = Request.Builder().url(url).build()
+                // ادامه دانلود (Resume): فایل ناقص قبلی اگر باشد از همان‌جا ادامه می‌دهیم
+                var resumeFrom = 0L
+                if (file.exists() && file.length() > 0L) resumeFrom = file.length()
+
+                val requestBuilder = Request.Builder().url(url)
+                if (resumeFrom > 0L) requestBuilder.header("Range", "bytes=$resumeFrom-")
+                val request = requestBuilder.build()
+
                 client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
+                    val code = response.code
+                    // 416 = فایل قبلاً کامل بوده؛ همان را قبول کن
+                    if (code == 416) {
+                        _states.update { it + (key to DownloadState.Ready(file)) }
+                        return@use
+                    }
+                    if (code != 200 && code != 206) throw IOException("HTTP $code")
+                    // سرور Range را پشتیبانی نمی‌کند → از صفر شروع کن
+                    var done = if (code == 206) resumeFrom else 0L
+                    if (code == 200) file.delete()
                     val body = response.body ?: throw IOException(context.getString(R.string.err_empty_response))
-                    val total = body.contentLength()
+                    val total = body.contentLength() + done
                     body.byteStream().use { input ->
-                        FileOutputStream(file).use { output ->
+                        java.io.FileOutputStream(file, code == 206).use { output ->
                             val buffer = ByteArray(64 * 1024)
                             var read: Int
-                            var done = 0L
                             var lastProgress = -1
                             while (input.read(buffer).also { read = it } != -1) {
                                 output.write(buffer, 0, read)
                                 done += read
                                 if (total > 0) {
-                                    val progress = ((done * 100) / total).toInt()
+                                    val progress = ((done * 100) / total).toInt().coerceIn(0, 100)
                                     if (progress != lastProgress) {
                                         lastProgress = progress
                                         _states.update {
@@ -71,6 +92,10 @@ object ApkDownloader {
                                 }
                             }
                         }
+                    }
+                    // فایل ناقص را «موفق» جا نزن: اتصال تمیز بسته شده ولی بایت‌ها ناقص‌اند
+                    if (total > 0 && done < total) {
+                        throw IOException(context.getString(R.string.err_incomplete, done, total))
                     }
                 }
 

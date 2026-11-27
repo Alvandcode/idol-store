@@ -249,6 +249,7 @@
     <string name="err_invalid_repo_url">Invalid GitHub URL: %1$s</string>
     <string name="err_catalog_load">Failed to load catalog</string>
     <string name="err_github_code">GitHub error (code %1$d)</string>
+    <string name="err_incomplete">Download incomplete (%1$d of %2$d bytes). Try again; it resumes from where it stopped.</string>
     <string name="err_unknown">Unknown error</string>
     <string name="err_repo_details">Failed to fetch repo info (code %1$d)</string>
     <string name="err_empty_response">Empty response</string>

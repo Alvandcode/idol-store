@@ -275,6 +275,7 @@
     <string name="err_invalid_repo_url">آدرس گیت‌هاب نامعتبر است: %1$s</string>
     <string name="err_catalog_load">خطا در دریافت کاتالوگ</string>
     <string name="err_github_code">خطای گیت‌هاب (کد %1$d)</string>
+    <string name="err_incomplete">دانلود ناقص ماند (%1$d از %2$d بایت). دوباره تلاش کن؛ از همان‌جا ادامه می‌دهد.</string>
     <string name="err_unknown">خطای ناشناخته</string>
     <string name="err_repo_details">خطای دریافت اطلاعات ریپو (کد %1$d)</string>
     <string name="err_empty_response">پاسخ خالی بود</string>
