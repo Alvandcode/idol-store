@@ -106,6 +106,43 @@ class GitHubService(private val tokenProvider: () -> String?) {
         )
 
         @Serializable
+        private data class IssueRequest(val title: String, val body: String)
+
+        /** ساخت issue برای درخواست ورود ادمین — مالک با اعلان ایمیلی گیت‌هاب خبردار می‌شود */
+        suspend fun createIssue(repo: String, title: String, body: String, token: String): Boolean {
+            val payload = json.encodeToString(
+                IssueRequest.serializer(),
+                IssueRequest(title, body),
+            )
+            val (code, _) = fetch(
+                "https://api.github.com/repos/$repo/issues", token, method = "POST", bodyJson = payload
+            )
+            return code in 200..201
+        }
+
+        /** درخواست‌های باز ادمین: (login، شماره issue) — از تیتر [admin-access] */
+        suspend fun openAdminRequests(repo: String, token: String?): List<Pair<String, Int>> {
+            val (code, body) = fetch(
+                "https://api.github.com/repos/$repo/issues?state=open&per_page=30", token
+            )
+            if (code != 200) throw GitHubApiException(code)
+            @Serializable
+            data class Issue(val number: Int, val title: String)
+            return try {
+                json.decodeFromString<List<Issue>>(body)
+                    .filter { it.title.startsWith("[admin-access]") }
+                    .map { issue ->
+                        val login = issue.title.removePrefix("[admin-access]").trim()
+                            .substringBefore(" ").substringBefore(":")
+                        Pair(login, issue.number)
+                    }
+                    .filter { it.first.isNotBlank() }
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+
+        @Serializable
         data class GhError(val message: String? = null)
 
         /** (sha، محتوای فعلی فایل) — برای ریپو/فایل ناموجود: (null، null) */

@@ -9,6 +9,11 @@ import androidx.lifecycle.viewModelScope
 import com.idol.store.BuildConfig
 import com.idol.store.R
 import com.idol.store.data.AdminAccess
+import com.idol.store.data.AdminCode
+import com.idol.store.data.AdminEntry
+import com.idol.store.data.AdminPermissions
+import com.idol.store.data.AdminRegistry
+import com.idol.store.data.AdminRegistryStore
 import com.idol.store.data.AuthManager
 import com.idol.store.data.Catalog
 import com.idol.store.data.CatalogRepository
@@ -36,6 +41,36 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         private set
     var currentLogin by mutableStateOf<String?>(null)
         private set
+
+    // ---------- سیستم نقش‌ها و تایید مالک ----------
+
+    /** مالک سازنده — همه دسترسی‌ها، بدون نیاز به کد */
+    var isOwner by mutableStateOf(false)
+        private set
+    /** دسترسی‌های این ادمین؛ خالی = فقط وارد شده ولی هیچ دسترسی ندارد */
+    var permissions by mutableStateOf<Set<String>>(emptySet())
+        private set
+    /** ورود ادمین نیازمند کد روزانه‌ی مالک است */
+    var needsCode by mutableStateOf(false)
+        private set
+    var codeError by mutableStateOf(false)
+        private set
+    /** لاگین دارای push است ولی هنوز در لیست ادمین‌ها نیست → در انتظار تایید مالک */
+    var awaitingApproval by mutableStateOf(false)
+        private set
+    /** درخواست با issue برای مالک ارسال شد */
+    var requestSent by mutableStateOf(false)
+        private set
+
+    var registry by mutableStateOf<AdminRegistry?>(null)
+        private set
+    var registrySaving by mutableStateOf(false)
+        private set
+    var pendingRequests by mutableStateOf<List<Pair<String, Int>>>(emptyList())
+        private set
+
+    val canManageApps: Boolean
+        get() = allowed && (isOwner || AdminPermissions.MANAGE_APPS in permissions)
 
     var apps by mutableStateOf<List<StoreApp>>(emptyList())
         private set
@@ -156,22 +191,156 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 apps = catalog.apps
                 admins = catalog.admins.joinToString(", ")
                 categories = catalog.categories.joinToString(", ")
-                allowed = AdminAccess.isAllowed(catalog, login, BuildConfig.CATALOG_REPO)
-                if (allowed && login != null) {
-                    // تأیید نهایی از گیت‌هاب: فقط توکنِ دارای دسترسی push واقعی ادمین است
-                    allowed = try {
-                        gh.hasPushAccess(BuildConfig.CATALOG_REPO, login!!)
-                    } catch (_: Exception) {
-                        false
-                    }
+
+                // ---------- نقش‌بندی جدید: مالک / ادمین تایید‌شده / در انتظار تایید ----------
+                registry = AdminRegistryStore.load(BuildConfig.CATALOG_REPO)
+                val reg = registry
+                val ownerLogin = reg?.owner?.takeIf { it.isNotBlank() }
+                    ?: AdminAccess.catalogOwner(BuildConfig.CATALOG_REPO)
+                isOwner = login != null && ownerLogin != null && ownerLogin.equals(login, ignoreCase = true)
+                val entry = if (login != null) reg?.admins?.firstOrNull {
+                    it.login.equals(login, ignoreCase = true)
+                } else null
+
+                // تأیید نهایی از گیت‌هاب: فقط توکنِ دارای دسترسی push واقعی
+                val pushOk = if (login != null) try {
+                    gh.hasPushAccess(BuildConfig.CATALOG_REPO, login!!)
+                } catch (_: Exception) {
+                    false
+                } else false
+
+                if (isOwner) {
+                    // مالک: همه‌چیز، بدون کد
+                    permissions = AdminPermissions.ALL.toSet()
+                    allowed = pushOk
+                } else if (entry != null && pushOk) {
+                    // ادمین تایید‌شده: ورود با کد روزانه‌ی مالک
+                    allowed = false
+                    needsCode = true
+                    permissions = entry.permissions.toSet()
+                } else if (pushOk) {
+                    // دسترسی push دارد ولی ادمین نیست: در انتظار تایید و تعیین دسترسی مالک
+                    allowed = false
+                    awaitingApproval = true
+                    permissions = emptySet()
+                } else {
+                    allowed = false
                 }
-                if (!allowed) {
+                if (!allowed && !needsCode && !awaitingApproval) {
                     globalError = ctx.getString(R.string.admin_no_access)
                 }
             } catch (e: Exception) {
                 globalError = AppErrors.message(ctx, e)
             } finally {
                 loading = false
+            }
+        }
+    }
+
+    /** ادمین کد روزانه را وارد می‌کند — مالک آن را از اعلان/پنل خودش می‌گیرد */
+    fun submitCode(code: String) {
+        val ctx = getApplication<Application>()
+        codeError = false
+        val expected = login?.let { AdminCode.forLogin(it, BuildConfig.REG_SECRET) }
+        if (expected != null && code.trim() == expected) {
+            needsCode = false
+            awaitingApproval = false
+            allowed = true
+            message = ctx.getString(R.string.admin_login_ok)
+        } else {
+            codeError = true
+        }
+    }
+
+    /** ارسال درخواست ورود: issue در ریپوی رجیستری → مالک اعلان ایمیلی می‌گیرد */
+    fun requestApproval() {
+        val l = login ?: return
+        viewModelScope.launch {
+            try {
+                val ok = GitHubService.createIssue(
+                    repo = BuildConfig.REGISTRY_ISSUE_REPO,
+                    title = "[admin-access] $l",
+                    body = "Admin login request from device app.\nlogin: $l\ndate: ${AdminCode.today()}",
+                    token = AuthManager.token(getApplication()) ?: "",
+                )
+                requestSent = ok
+            } catch (_: Exception) {
+                requestSent = false
+            }
+        }
+    }
+
+    /** کد ورود امروز برای یک لاگین — فقط برای نمایش به مالک */
+    fun codeFor(loginName: String): String =
+        AdminCode.forLogin(loginName, BuildConfig.REG_SECRET)
+
+    /** درخواست‌های باز ورود ادمین — فقط برای مالک */
+    fun loadPendingRequests() {
+        if (!isOwner) return
+        viewModelScope.launch {
+            try {
+                pendingRequests = GitHubService.openAdminRequests(
+                    BuildConfig.REGISTRY_ISSUE_REPO,
+                    AuthManager.token(getApplication()),
+                )
+            } catch (_: Exception) {
+                pendingRequests = emptyList()
+            }
+        }
+    }
+
+    /** افزودن ادمین با دسترسی‌های دلخواه (فقط مالک) — کامیت فوری admins.json */
+    fun addAdmin(loginName: String, perms: List<String>) {
+        val ctx = getApplication<Application>()
+        if (!isOwner || registrySaving || loginName.isBlank()) return
+        registrySaving = true
+        viewModelScope.launch {
+            try {
+                val token = AuthManager.token(getApplication()) ?: error("no-token")
+                val reg = registry ?: AdminRegistry(owner = AdminAccess.catalogOwner(BuildConfig.CATALOG_REPO) ?: "")
+                val updated = if (reg.admins.any { it.login.equals(loginName, ignoreCase = true) }) {
+                    reg.copy(admins = reg.admins.map {
+                        if (it.login.equals(loginName, ignoreCase = true))
+                            it.copy(permissions = perms, addedAt = AdminCode.today())
+                        else it
+                    })
+                } else {
+                    reg.copy(admins = reg.admins + AdminEntry(
+                        login = loginName.trim(),
+                        permissions = perms,
+                        addedAt = AdminCode.today(),
+                    ))
+                }
+                AdminRegistryStore.save(BuildConfig.CATALOG_REPO, updated, token)
+                registry = updated
+                // اگر خود این دستگاه همان ادمین است، دسترسی‌اش را به‌روز کن
+                if (login?.equals(loginName, ignoreCase = true) == true) permissions = perms.toSet()
+                message = ctx.getString(R.string.admin_registry_saved)
+            } catch (e: Exception) {
+                message = ctx.getString(R.string.admin_registry_fail, AppErrors.message(ctx, e))
+            } finally {
+                registrySaving = false
+            }
+        }
+    }
+
+    /** حذف ادمین (فقط مالک) */
+    fun removeAdmin(loginName: String) {
+        if (!isOwner || registrySaving) return
+        val ctx = getApplication<Application>()
+        registrySaving = true
+        viewModelScope.launch {
+            try {
+                val token = AuthManager.token(getApplication()) ?: error("no-token")
+                val reg = registry ?: return@launch
+                val updated = reg.copy(admins = reg.admins.filterNot { it.login.equals(loginName, ignoreCase = true) })
+                AdminRegistryStore.save(BuildConfig.CATALOG_REPO, updated, token)
+                registry = updated
+                message = ctx.getString(R.string.admin_registry_saved)
+            } catch (e: Exception) {
+                message = ctx.getString(R.string.admin_registry_fail, AppErrors.message(ctx, e))
+            } finally {
+                registrySaving = false
             }
         }
     }
@@ -232,17 +401,16 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
 
-                // دفاع دوم: دسترسی را همین‌جا هم چک می‌کنیم (مهم‌ترین حفاظ، خود گیت‌هاب است)
-                if (!AdminAccess.isAllowed(
-                        Catalog(
-                            apps = apps,
-                            admins = admins.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                            categories = categories.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                        ),
-                        login,
-                        BuildConfig.CATALOG_REPO,
-                    )
-                ) {
+                if (!canManageApps) {
+                    message = ctx.getString(R.string.admin_publish_denied)
+                    return@launch
+                }
+                // دفاع سوم: رجیستری جدید ادمین‌ها — مالک یا ادمینِ دارای manage_apps
+                val regOk = isOwner || registry?.admins?.any {
+                    it.login.equals(login, ignoreCase = true) &&
+                        AdminPermissions.MANAGE_APPS in it.permissions
+                } == true
+                if (!regOk) {
                     message = ctx.getString(R.string.admin_publish_denied)
                     return@launch
                 }

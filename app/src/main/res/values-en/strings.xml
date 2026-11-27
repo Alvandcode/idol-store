@@ -7,6 +7,7 @@
     <string name="logout_account">Log out</string>
     <string name="admin_panel">Admin panel</string>
     <string name="retry">Retry</string>
+    <string name="ok">OK</string>
     <string name="back">Back</string>
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -35,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.idol.store.R
+import com.idol.store.data.AdminPermissions
 import com.idol.store.data.GitHubService
 import com.idol.store.data.StoreApp
 
@@ -145,24 +149,268 @@ fun AdminScreen(onBack: () -> Unit) {
                     verticalArrangement = Arrangement.Center,
                 ) { CircularProgressIndicator() }
 
-                !vm.allowed -> Column(
-                    Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        "⛔ " + stringResource(R.string.admin_no_access),
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-                }
+                !vm.allowed -> AdminDeniedView(vm, onBack)
 
                 vm.editing != null -> AppForm(vm)
 
                 else -> AdminList(vm)
             }
+            }
+        }
+    }
+}
+
+/** حالت‌های عدم ورود: کد تایید / انتظار تایید مالک / دسترسی ندارد */
+@Composable
+private fun AdminDeniedView(vm: AdminViewModel, onBack: () -> Unit) {
+    var code by remember { mutableStateOf("") }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        when {
+            vm.needsCode -> {
+                Icon(Icons.Filled.Lock, contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    stringResource(R.string.admin_code_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.admin_code_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = {
+                        if (it.length <= 6 && it.all { c -> c.isDigit() }) code = it
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = vm.codeError,
+                    textStyle = MaterialTheme.typography.titleLarge,
+                    supportingText = {
+                        if (vm.codeError) Text(
+                            stringResource(R.string.admin_code_wrong),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                )
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = { vm.submitCode(code) },
+                    enabled = code.length == 6,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.ok)) }
+            }
+
+            vm.awaitingApproval -> {
+                Text(
+                    "⏳ " + stringResource(R.string.admin_awaiting_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.admin_awaiting_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                if (vm.requestSent) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.admin_request_sent),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Spacer(Modifier.height(14.dp))
+                if (!vm.requestSent) {
+                    Button(onClick = { vm.requestApproval() }) {
+                        Text(stringResource(R.string.admin_request_send))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+            }
+
+            else -> {
+                Text(
+                    "⛔ " + stringResource(R.string.admin_no_access),
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+            }
+        }
+    }
+}
+
+/** بخش‌های فقط‌سازنده: مدیریت ادمین‌ها + کدها + درخواست‌ها */
+@Composable
+private fun OwnerAdminsSection(vm: AdminViewModel) {
+    var newLogin by remember { mutableStateOf("") }
+    var newPerms by remember { mutableStateOf(setOf(AdminPermissions.MANAGE_APPS)) }
+
+    LaunchedEffect(vm.isOwner) { if (vm.isOwner) vm.loadPendingRequests() }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            stringResource(R.string.admin_owner_section),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            stringResource(R.string.admin_owner_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        // ادمین‌های فعلی + دسترسی‌هایشان
+        vm.registry?.admins?.forEach { entry ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    entry.login,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(0.8f),
+                )
+                AdminPermissions.ALL.forEach { perm ->
+                    FilterChip(
+                        selected = perm in entry.permissions,
+                        onClick = {
+                            val updated = if (perm in entry.permissions)
+                                entry.permissions - perm else entry.permissions + perm
+                            vm.addAdmin(entry.login, updated)
+                        },
+                        label = {
+                            Text(
+                                stringResource(
+                                    when (perm) {
+                                        AdminPermissions.MANAGE_APPS -> R.string.admin_perm_apps
+                                        AdminPermissions.MANAGE_ADMINS -> R.string.admin_perm_admins
+                                        else -> R.string.admin_perm_store
+                                    }
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        },
+                    )
+                    Spacer(Modifier.width(4.dp))
+                }
+                IconButton(onClick = { vm.removeAdmin(entry.login) }) {
+                    Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete),
+                        modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+
+        // افزودن ادمین جدید
+        OutlinedTextField(
+            value = newLogin,
+            onValueChange = { newLogin = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(R.string.admin_add_login)) },
+            singleLine = true,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            AdminPermissions.ALL.forEach { perm ->
+                FilterChip(
+                    selected = perm in newPerms,
+                    onClick = {
+                        newPerms = if (perm in newPerms) newPerms - perm else newPerms + perm
+                    },
+                    label = {
+                        Text(
+                            stringResource(
+                                when (perm) {
+                                    AdminPermissions.MANAGE_APPS -> R.string.admin_perm_apps
+                                    AdminPermissions.MANAGE_ADMINS -> R.string.admin_perm_admins
+                                    else -> R.string.admin_perm_store
+                                }
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    },
+                )
+            }
+        }
+        Button(
+            onClick = {
+                vm.addAdmin(newLogin.trim(), newPerms.toList())
+                newLogin = ""
+            },
+            enabled = newLogin.isNotBlank() && !vm.registrySaving,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.admin_add_btn))
+        }
+
+        // درخواست‌های باز ورود ادمین
+        HorizontalDivider()
+        Text(
+            stringResource(R.string.admin_pending_title),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        if (vm.pendingRequests.isEmpty()) {
+            Text(
+                stringResource(R.string.admin_pending_none),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            vm.pendingRequests.forEach { (login, _) ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(login, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = {
+                        vm.addAdmin(login, listOf(AdminPermissions.MANAGE_APPS))
+                    }) {
+                        Text(stringResource(R.string.admin_pending_approve))
+                    }
+                }
+            }
+        }
+
+        // کدهای ورود امروز
+        HorizontalDivider()
+        Text(
+            stringResource(R.string.admin_codes_title),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Text(
+            stringResource(R.string.admin_codes_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val logins = (vm.registry?.admins?.map { it.login }.orEmpty())
+        logins.forEach { l ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(l, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    vm.codeFor(l),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
@@ -177,6 +425,15 @@ private fun AdminList(vm: AdminViewModel) {
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp),
     ) {
+        if (!vm.canManageApps) {
+            item {
+                Text(
+                    stringResource(R.string.admin_no_perms_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
         item {
             Button(
                 onClick = { vm.openEditor(null) },
@@ -187,7 +444,9 @@ private fun AdminList(vm: AdminViewModel) {
                 Text(stringResource(R.string.admin_add_new))
             }
         }
+        }
 
+        if (vm.canManageApps) {
         items(vm.apps, key = { it.id }) { app ->
             Card(
                 shape = MaterialTheme.shapes.medium,
@@ -233,7 +492,14 @@ private fun AdminList(vm: AdminViewModel) {
                 }
             }
         }
+        }
 
+        if (vm.isOwner) {
+        item {
+            OwnerAdminsSection(vm)
+        }
+        }
+        if (vm.canManageApps) {
         item {
             // کارت انتشار کاتالوگ: مدیران + دسته‌ها + دکمه انتشار
             Column(
@@ -256,14 +522,6 @@ private fun AdminList(vm: AdminViewModel) {
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = vm.admins,
-                    onValueChange = { vm.admins = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Alvandcode, friend1") },
-                    singleLine = true,
-                )
                 Spacer(Modifier.height(16.dp))
                 Text(
                     stringResource(R.string.admin_categories_hint),
@@ -293,6 +551,31 @@ private fun AdminList(vm: AdminViewModel) {
                 }
             }
             Spacer(Modifier.height(24.dp))
+        }
+        }
+        if (vm.isOwner) {
+        item {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(16.dp),
+            ) {
+                Text(
+                    stringResource(R.string.admin_store_update_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.admin_store_update_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(24.dp))
+        }
         }
     }
 
