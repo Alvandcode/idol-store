@@ -75,6 +75,10 @@ object ApkDownloader {
                 }
 
                 _states.update { it + (key to DownloadState.Ready(file)) }
+
+                // خودترمیمی: پکیج‌نیم واقعی از خود APK خوانده و ذخیره می‌شود
+                // تا بعد از نصب، اپ به‌عنوان «نصب‌شده» شناسایی شود (حتی بدون packageName در کاتالوگ)
+                InstalledPkgMap.save(context, key.substringBefore('|'), file)
             } catch (e: Exception) {
                 _states.update {
                     it + (key to DownloadState.Failed(
@@ -95,4 +99,29 @@ object ApkDownloader {
         job?.cancel()
         _states.update { it - key }
     }
+}
+
+/**
+ * نگاشت appId → نام پکیج واقعی. منبع: پارس خود APK دانلودشده.
+ * با این نگاشت، «به‌روز است ✓» حتی وقتی کاتالوگ packageName ندارد هم درست کار می‌کند.
+ */
+object InstalledPkgMap {
+
+    private const val FILE = "pkg_map"
+
+    private fun prefs(context: Context) =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+
+    fun save(context: Context, appId: String, apkFile: File) {
+        try {
+            val pm = context.packageManager
+            val info = pm.getPackageArchiveInfo(apkFile.absolutePath, 0)
+            val pkg = info?.packageName?.takeIf { it.isNotBlank() } ?: return
+            prefs(context).edit().putString(appId, pkg).apply()
+        } catch (_: Exception) {
+        }
+    }
+
+    fun get(context: Context, appId: String): String? =
+        try { prefs(context).getString(appId, null)?.takeIf { it.isNotBlank() } } catch (_: Exception) { null }
 }

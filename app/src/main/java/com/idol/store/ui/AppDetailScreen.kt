@@ -82,7 +82,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
     val states by vm.downloadStates.collectAsState()
     val contentMap by vm.content.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
-    val installedVersion = vm.installedVersionName(app.packageName)
+    val installedVersion = vm.installedVersionName(app)
     val context = LocalContext.current
 
     Scaffold(

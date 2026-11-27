@@ -494,7 +494,7 @@ private fun chipColors() = FilterChipDefaults.filterChipColors(
 private fun AppRowItem(vm: StoreViewModel, contentMap: Map<String, AppContentState>, app: StoreApp) {
     val states by vm.downloadStates.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
-    val installedVersion = vm.installedVersionName(app.packageName)
+    val installedVersion = vm.installedVersionName(app)
     val latest = (state as? AppContentState.Ready)?.releases?.firstOrNull()
     val status = installStatusOf(installedVersion, latest?.tagName)
     val key = latest?.let { downloadKey(app.id, it.tagName) }
@@ -672,7 +672,7 @@ private fun YouTab(vm: StoreViewModel, onLogout: () -> Unit, modifier: Modifier,
     val contentMap by vm.content.collectAsState()
     val context = LocalContext.current
     val apps = vm.catalog?.apps.orEmpty()
-    val installed = apps.filter { vm.installedVersionName(it.packageName) != null }
+    val installed = apps.filter { vm.installedVersionName(it) != null }
     var themeMode by rememberSaveable { mutableStateOf(Prefs.themeMode.name) }
 
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {

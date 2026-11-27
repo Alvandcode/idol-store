@@ -17,6 +17,7 @@ import com.idol.store.data.CatalogRepository
 import com.idol.store.data.GhAsset
 import com.idol.store.data.GhRelease
 import com.idol.store.data.GitHubService
+import com.idol.store.data.InstalledPkgMap
 import com.idol.store.data.Installer
 import com.idol.store.data.SecurityGateStatus
 import com.idol.store.data.SecurityRepository
@@ -263,6 +264,34 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
             getApplication<Application>().packageManager
                 .getPackageInfo(packageName, 0).versionName
         } catch (_: PackageManager.NameNotFoundException) {
+            null
+        }
+    }
+
+    /**
+     * شناسایی اپ نصب‌شده با سه لایه:
+     * ۱) نگاشت ذخیره‌شده از خود APK دانلودشده (مطمئن‌ترین)
+     * ۲) packageName کاتالوگ
+     * ۳) اسکن بی‌حساسیت به حروف بین پکیج‌های نصب‌شده
+     */
+    fun installedVersionName(app: com.idol.store.data.StoreApp?): String? {
+        if (app == null) return null
+        val candidates = listOfNotNull(
+            InstalledPkgMap.get(getApplication(), app.id),
+            app.packageName?.takeIf { it.isNotBlank() },
+            app.id.takeIf { it.isNotBlank() },
+        ).filter { it.isNotBlank() }.distinct()
+        candidates.forEach { pkg ->
+            installedVersionName(pkg)?.let { return it }
+        }
+        // اسکن بی‌حساسیت: پکیجی که نامش (بدون حساسیت حروف) با یکی از نامزدها یکی است
+        return try {
+            val pm = getApplication<Application>().packageManager
+            val installed = pm.getInstalledPackages(0)
+            installed.firstOrNull { info ->
+                candidates.any { it.equals(info.packageName, ignoreCase = true) }
+            }?.versionName
+        } catch (_: Exception) {
             null
         }
     }
