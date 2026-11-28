@@ -247,21 +247,46 @@ class GitHubService(private val tokenProvider: () -> String?) {
         private val json = Json { ignoreUnknownKeys = true }
 
         /**
-         * از بین asset های یک ریلیز، بهترین APK یونیورسال را برمی‌دارد:
-         * اولویت: اسم دارای universal > اسم بدون کلیدواژه معماری (arm/x86) > بقیه
+         * انتخاب APK سازگار با ABI دستگاه.
+         * ترتیب Build.SUPPORTED_ABIS رعایت می‌شود؛ APK یونیورسال/عمومی فقط fallback است.
+         * اگر فقط APK معماری نامرتبط وجود داشته باشد، فایل اشتباه پیشنهاد نمی‌شود.
          */
-        fun pickUniversalApk(assets: List<GhAsset>): GhAsset? {
+        fun pickCompatibleApk(
+            assets: List<GhAsset>,
+            supportedAbis: Array<String> = android.os.Build.SUPPORTED_ABIS,
+        ): GhAsset? {
             val apks = assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
             if (apks.isEmpty()) return null
-            val abiKeywords = listOf("arm64", "armeabi", "x86_64", "x86", "abi")
-            fun score(a: GhAsset): Int = when {
-                a.name.contains("universal", ignoreCase = true) -> 3
-                abiKeywords.none { a.name.contains(it, ignoreCase = true) } -> 2
-                else -> 1
+
+            fun architecture(name: String): String? {
+                val n = name.lowercase().replace('_', '-')
+                return when {
+                    Regex("(^|[-.])(arm64-v8a|aarch64|arm64)([-.]|$)").containsMatchIn(n) -> "arm64-v8a"
+                    Regex("(^|[-.])(armeabi-v7a|armv7|armv7a)([-.]|$)").containsMatchIn(n) -> "armeabi-v7a"
+                    Regex("(^|[-.])(armeabi)([-.]|$)").containsMatchIn(n) -> "armeabi"
+                    Regex("(^|[-.])(x86-64|x86_64)([-.]|$)").containsMatchIn(name.lowercase()) -> "x86_64"
+                    Regex("(^|[-.])x86([- .]|$)").containsMatchIn(n) -> "x86"
+                    else -> null
+                }
             }
-            return apks.sortedWith(
-                compareByDescending<GhAsset> { score(it) }.thenByDescending { it.size }
-            ).first()
+
+            val universal = apks.filter {
+                it.name.contains("universal", ignoreCase = true) ||
+                    architecture(it.name) == null
+            }.maxByOrNull { it.size }
+
+            for (abi in supportedAbis) {
+                val normalizedAbi = abi.lowercase()
+                val match = apks
+                    .filter { architecture(it.name) == normalizedAbi }
+                    .maxByOrNull { it.size }
+                if (match != null) return match
+            }
+            return universal
         }
+
+        /** سازگاری قبلی برای محل‌هایی که هنوز انتخاب عمومی لازم دارند. */
+        fun pickUniversalApk(assets: List<GhAsset>): GhAsset? =
+            pickCompatibleApk(assets, arrayOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86"))
     }
 }
