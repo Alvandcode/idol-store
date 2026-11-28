@@ -40,7 +40,9 @@ class UpdateChecker(context: Context, params: WorkerParameters) : CoroutineWorke
             catalog.apps.filter { it.id in notifying }.forEach { app ->
                 try {
                     val repo = GitHubService.repoFromUrl(app.github) ?: return@forEach
-                    val latest = gh.stableReleases(repo).firstOrNull() ?: return@forEach
+                    val latest = gh.stableReleases(repo).firstOrNull {
+                        GitHubService.pickCompatibleApk(it.assets) != null
+                    } ?: return@forEach
                     val last = UpdatePrefs.lastTag(context, app.id)
                     if (last == null) {
                         UpdatePrefs.setLastTag(context, app.id, latest.tagName)
