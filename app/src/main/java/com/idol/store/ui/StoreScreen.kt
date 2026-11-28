@@ -409,6 +409,33 @@ private fun HomeTab(
 
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
                     if (selectedCat == "همه") {
+                        // کاروسل «محبوب‌ترین‌ها» — رتبه‌بندی بر اساس ستاره‌های گیت‌هاب هر پروژه
+                        val popular = apps
+                            .mapNotNull { app ->
+                                val count = (contentMap[app.id] as? AppContentState.Ready)
+                                    ?.repoInfo?.stargazersCount
+                                if (count != null && count > 0) app to count else null
+                            }
+                            .sortedByDescending { it.second }
+                        if (popular.size >= 2) {
+                            item {
+                                SectionHeader(stringResource(R.string.popular_section)) {}
+                            }
+                            item {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    items(popular.take(8), key = { "pp_${it.first.id}" }) { (app, count) ->
+                                        AppCardHorizontal(
+                                            app = app,
+                                            subtitle = "★ " + java.text.NumberFormat.getInstance(java.util.Locale.US).format(count),
+                                            onClick = { vm.selectedApp = app },
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         // کاروسل «به‌روزرسانی‌های اخیر» — سبک گوگل‌پلی
                         val recent = vm.recentApps
                         if (recent.isNotEmpty()) {

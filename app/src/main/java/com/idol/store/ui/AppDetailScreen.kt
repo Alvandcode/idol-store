@@ -191,7 +191,15 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                                 }
                             }
 
-                            // دکمه ستاره
+                            // تعداد ستاره‌های پروژه + دکمه ستاره (حمایت)
+                            s.repoInfo?.stargazersCount?.let { count ->
+                                Text(
+                                    "★ " + java.text.NumberFormat.getInstance(java.util.Locale.US).format(count),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                            }
                             FilledTonalIconButton(onClick = { vm.toggleStar(app) }) {
                                 Icon(
                                     imageVector = if (s.starred == true) Icons.Filled.Star else Icons.Outlined.StarBorder,

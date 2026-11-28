@@ -76,6 +76,8 @@ data class GhRepoInfo(
     val homepage: String? = null,
     @SerialName("html_url") val htmlUrl: String? = null,
     val owner: GhOwner? = null,
+    /** تعداد ستاره‌های ریپو — مبنای رتبه‌بندی محبوب‌ترین‌ها */
+    @SerialName("stargazers_count") val stargazersCount: Long? = null,
 )
 
 /** کلید یکتا برای پیگیری وضعیت دانلود هر ریلیز از هر اپ */
