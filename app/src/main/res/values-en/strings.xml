@@ -88,6 +88,9 @@
     <string name="sec_status_safe">No threats detected</string>
     <string name="sec_status_safe_sub">All scanners ran and found nothing suspicious. This is not an absolute guarantee, but no warnings were recorded.</string>
     <string name="sec_status_warning">Needs review</string>
+    <string name="sec_negative">Negative</string>
+    <string name="sec_positive">Positive</string>
+    <string name="sec_score_plus_fmt">+%1$d%%</string>
     <string name="sec_score_fmt">Scan score: %1$d%%</string>
     <string name="sec_counts_fmt">Clean: %1$d · Negative: %2$d</string>
     <string name="sec_status_warning_sub">Warnings were recorded during the scan. Proceed with caution and review the app permissions after installing.</string>
