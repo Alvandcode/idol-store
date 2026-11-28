@@ -41,11 +41,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import kotlin.math.cos
 import kotlin.math.sin
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -357,6 +359,7 @@ private fun ScanGauge(pct: Int) {
     val brightGreen = Color(0xFF4ADE80)
     val amber = Color(0xFFF59E0B)
 
+    androidx.compose.runtime.CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Canvas(
             Modifier
@@ -408,11 +411,11 @@ private fun ScanGauge(pct: Int) {
                 val p2 = Offset(center.x + rIn2 * cos(a).toFloat(), center.y + rIn2 * sin(a).toFloat())
                 drawLine(Color.White.copy(alpha = 0.30f), p1, p2, strokeWidth = 2.dp.toPx())
             }
-            // عقربه
+            // عقربه — کاملاً مشکی و کمی ضخیم‌تر
             val na = Math.toRadians((180.0 + 1.8 * pct))
             val needleLen = rOuter - strokeW * 1.9f
             val tip = Offset(center.x + needleLen * cos(na).toFloat(), center.y + needleLen * sin(na).toFloat())
-            drawLine(brightGreen, center, tip, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
+            drawLine(Color(0xFF0B0B0B), center, tip, strokeWidth = 7.dp.toPx(), cap = StrokeCap.Round)
             // توپی مرکزی
             drawCircle(Color(0xFF1E293B), radius = 10.dp.toPx(), center = center)
             drawCircle(Color(0xFF94A3B8), radius = 10.dp.toPx(), center = center, style = Stroke(width = 2.5.dp.toPx()))
@@ -491,6 +494,7 @@ private fun ScanGauge(pct: Int) {
                 }
             }
         }
+    }
     }
 }
 
