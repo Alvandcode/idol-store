@@ -55,13 +55,13 @@ jobs:
           IDOL_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           IDOL_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           IDOL_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: gradle assembleDebug --no-daemon "-PAPP_VERSION_NAME=${{ steps.ver.outputs.name || '1.0.6' }}" "-PAPP_VERSION_CODE=${{ steps.ver.outputs.code || '10006' }}"
+        run: gradle assembleRelease --no-daemon "-PAPP_VERSION_NAME=${{ steps.ver.outputs.name || '1.0.6' }}" "-PAPP_VERSION_CODE=${{ steps.ver.outputs.code || '10006' }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: idol-store-apk
-          path: app/build/outputs/apk/debug/idolstore-*.apk
+          path: app/build/outputs/apk/release/idolstore-*.apk
 
       - name: Attach APK to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
