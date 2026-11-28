@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پنل مدیریت Idol Store</title>
+<style>
+  :root{
+    --bg:#0b0f17; --bg2:#111827; --card:#161e2e; --card2:#1b2436;
+    --border:#253048; --text:#e5e9f2; --muted:#8b95ab;
+    --accent:#4f8cff; --accent2:#7aa5ff; --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text); min-height:100vh;
+    font-family:Vazirmatn,"Segoe UI",Tahoma,sans-serif; font-size:14px; line-height:1.7;
+  }
+  a{color:var(--accent2); text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg2);
+    position:sticky; top:0; z-index:50;
+  }
+  header .logo{font-weight:800; font-size:17px; white-space:nowrap}
+  header .logo span{color:var(--accent)}
+  header .repo{color:var(--muted); font-size:12.5px; direction:ltr; unicode-bidi:embed}
+  header .spacer{flex:1}
+  .badge{display:inline-flex; align-items:center; gap:5px; padding:2px 10px; border-radius:999px;
+    font-size:11.5px; border:1px solid var(--border); background:var(--card); color:var(--muted)}
+  .badge.owner{color:var(--warn); border-color:#4a3d12}
+  .badge.admin{color:var(--ok); border-color:#14432f}
+  .badge.awaiting{color:var(--warn)}
+  .badge.none{color:var(--err)}
+  .badge.rate{direction:ltr}
+  main{max-width:1080px; margin:0 auto; padding:20px 16px 80px}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px}
+  .card + .card{margin-top:14px}
+  h2{font-size:16px; margin:0 0 6px}
+  h3{font-size:14px; margin:0 0 10px}
+  .muted{color:var(--muted); font-size:12.5px}
+  .hidden{display:none !important}
+
+  /* ---------- فرم‌ها ---------- */
+  input[type=text],input[type=password],textarea,select{
+    width:100%; background:var(--bg2); color:var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:8px 10px; font-family:inherit; font-size:13.5px;
+  }
+  input:focus,textarea:focus,select:focus{outline:none; border-color:var(--accent)}
+  textarea{resize:vertical; min-height:110px; font-family:"JetBrains Mono",Consolas,monospace; font-size:12.5px; direction:ltr; text-align:left}
+  label{display:block; font-size:12.5px; color:var(--muted); margin:10px 0 4px}
+  .row{display:flex; gap:10px; flex-wrap:wrap}
+  .row > *{flex:1; min-width:150px}
+  button{
+    background:var(--accent); color:#fff; border:none; border-radius:8px; padding:8px 16px;
+    font-family:inherit; font-size:13.5px; cursor:pointer; font-weight:600;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  button:hover{background:var(--accent2)}
+  button:disabled{opacity:.45; cursor:not-allowed}
+  button.ghost{background:transparent; border:1px solid var(--border); color:var(--text); font-weight:400}
+  button.ghost:hover{border-color:var(--accent)}
+  button.danger{background:transparent; border:1px solid #5b2430; color:var(--err); font-weight:400; padding:4px 10px; font-size:12px}
+  button.danger:hover{background:#2a1116}
+  button.sm{padding:4px 10px; font-size:12px; font-weight:400}
+
+  /* ---------- تب‌ها ---------- */
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin:16px 0; border-bottom:1px solid var(--border); padding-bottom:10px}
+  .tabs button{background:var(--card); border:1px solid var(--border); color:var(--muted); font-weight:500}
+  .tabs button.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+
+  /* ---------- لیست اپ‌ها ---------- */
+  .app-item{display:flex; gap:12px; align-items:center; padding:10px 12px; border:1px solid var(--border);
+    border-radius:10px; background:var(--card2); margin-top:8px}
+  .app-item img{width:44px; height:44px; border-radius:10px; object-fit:cover; background:var(--bg2); flex-shrink:0}
+  .app-item .info{flex:1; min-width:0}
+  .app-item .name{font-weight:700; font-size:14px}
+  .app-item .meta{color:var(--muted); font-size:12px; display:flex; gap:10px; flex-wrap:wrap}
+  .app-item .meta .pkg{direction:ltr; unicode-bidi:embed; font-family:monospace; font-size:11px}
+  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--bg2); border:1px solid var(--border);
+    color:var(--text); padding:4px 12px; border-radius:999px; font-size:13px; margin:4px}
+  .chip button{background:none; border:none; color:var(--err); padding:0 2px; font-size:14px; cursor:pointer}
+  .search{max-width:340px; margin-bottom:6px}
+
+  /* ---------- ثبت گروهی ---------- */
+  .batch-row{border:1px solid var(--border); border-radius:10px; background:var(--card2); padding:12px; margin-top:10px}
+  .batch-row .head{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .batch-row .head img{width:36px; height:36px; border-radius:8px; object-fit:cover; background:var(--bg2)}
+  .batch-row .head .gh{direction:ltr; unicode-bidi:embed; color:var(--muted); font-size:12px; font-family:monospace}
+  .batch-row .fields{display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; margin-top:10px}
+  .batch-row .fields label{margin:0}
+  @media(max-width:700px){ .batch-row .fields{grid-template-columns:1fr} }
+  .status{font-size:11px; padding:2px 9px; border-radius:999px; border:1px solid var(--border); white-space:nowrap}
+  .status.ok{color:var(--ok); border-color:#14432f}
+  .status.dup{color:var(--warn); border-color:#4a3d12}
+  .status.err{color:var(--err); border-color:#5b2430}
+  .status.wait{color:var(--muted)}
+  .progress{height:5px; background:var(--bg2); border-radius:99px; overflow:hidden; margin-top:10px}
+  .progress > div{height:100%; background:var(--accent); width:0; transition:width .3s}
+
+  /* ---------- مودال ---------- */
+  .overlay{position:fixed; inset:0; background:rgba(5,8,14,.7); z-index:100; display:flex;
+    align-items:flex-start; justify-content:center; padding:30px 14px; overflow:auto}
+  .modal{background:var(--card); border:1px solid var(--border); border-radius:14px; width:100%; max-width:620px; padding:20px}
+
+  .toast{position:fixed; bottom:18px; right:50%; transform:translateX(50%); z-index:200;
+    background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 18px;
+    max-width:520px; box-shadow:0 8px 30px rgba(0,0,0,.5); font-size:13px}
+  .toast.err{border-color:#5b2430; color:var(--err)}
+  .toast.ok{border-color:#14432f; color:var(--ok)}
+
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{text-align:right; padding:8px 10px; border-bottom:1px solid var(--border)}
+  th{color:var(--muted); font-weight:600; font-size:12px}
+  td input[type=text]{padding:5px 8px}
+  .checkbox{display:inline-flex; align-items:center; gap:5px; margin-inline-end:12px; font-size:12.5px; color:var(--text)}
+  .checkbox input{accent-color:var(--accent)}
+  .diff-stat{display:flex; gap:14px; flex-wrap:wrap; margin:8px 0}
+  .diff-stat b{font-size:17px; display:block}
+  .center{text-align:center; padding:40px 10px}
+  .spinner{display:inline-block; width:14px; height:14px; border:2px solid var(--border);
+    border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🛡️ Idol Store <span>پنل مدیریت وب</span></div>
+  <div class="repo hidden" id="hd-repo"></div>
+  <div class="spacer"></div>
+  <span class="badge hidden" id="hd-role"></span>
+  <span class="badge rate hidden" id="hd-rate"></span>
+  <span class="badge hidden" id="hd-user"></span>
+  <button class="ghost sm hidden" id="btn-logout">خروج</button>
+</header>
+
+<main>
+
+  <!-- ============ ورود ============ -->
+  <div id="view-setup" class="hidden">
+    <div class="card" style="max-width:520px; margin:40px auto">
+      <h2>ورود به پنل مدیریت</h2>
+      <p class="muted">این پنل کاملاً سمت مرورگر (GitHub Pages) کار می‌کند؛ هیچ سرور واسطی وجود ندارد.
+      یک <b>توکن شخصی گیت‌هاب</b> با دسترسی نوشتن (Contents: Read &amp; write) روی ریپوی کاتالوگ لازم است.
+      توکن فقط در مرورگر خودت ذخیره می‌شود — آن را با کسی به اشتراک نگذار.</p>
+      <label>ریپوی کاتالوگ (owner/repo)</label>
+      <input type="text" id="in-repo" dir="ltr" placeholder="Alvandcode/idol-store-catalog">
+      <label>توکن گیت‌هاب (PAT)</label>
+      <input type="password" id="in-token" dir="ltr" placeholder="ghp_… یا github_pat_…">
+      <div style="margin-top:16px; display:flex; gap:10px; align-items:center">
+        <button id="btn-login">ورود</button>
+        <span class="muted" id="login-msg"></span>
+      </div>
+      <p class="muted" style="margin-top:14px">
+        ساخت توکن: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">Fine-grained PAT</a>
+        (Repository access → فقط ریپوی کاتالوگ → Permissions → Contents: Read and write)
+        یا <a href="https://github.com/settings/tokens/new?scope=repo" target="_blank">Classic PAT</a> با scope <code>repo</code>.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============ پنل ============ -->
+  <div id="view-panel" class="hidden">
+    <div class="tabs" id="tabs"></div>
+
+    <!-- --- پروژه‌ها --- -->
+    <section id="tab-apps" class="hidden">
+      <div class="card">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <h2 style="flex:1">پروژه‌های استور</h2>
+          <input type="text" id="apps-search" class="search" placeholder="جستجو…">
+          <button id="btn-add-app">＋ افزودن اپ</button>
+        </div>
+        <p class="muted">تغییرات فقط پس از «انتشار» در گیت‌هاب ذخیره می‌شوند.</p>
+        <div id="apps-list"></div>
+      </div>
+    </section>
+
+    <!-- --- ثبت گروهی --- -->
+    <section id="tab-batch" class="hidden">
+      <div class="card">
+        <h2>ثبت گروهی پروژه‌ها</h2>
+        <p class="muted">چند لینک پروژه (هر خط یک لینک — ریپو یا صفحه ریلیز گیت‌هاب) بده؛
+        پنل خودش نام، توضیح، سازنده، آیکون، آخرین ریلیز پایدار و حتی نام پکیج (از داخل APK) را
+        مطابق قالب فعلی کاتالوگ استخراج می‌کند. قبل از افزودن، همه را می‌توانی ویرایش کنی.</p>
+        <textarea id="batch-links" dir="ltr" style="min-height:100px"
+          placeholder="https://github.com/owner/repo&#10;owner2/repo2"></textarea>
+        <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <button id="btn-batch-fetch">دریافت خودکار اطلاعات</button>
+          <label class="checkbox"><input type="checkbox" id="batch-update-dup" checked> به‌روزرسانی موارد تکراری</label>
+          <span class="muted" id="batch-status"></span>
+        </div>
+        <div class="progress hidden" id="batch-progress"><div></div></div>
+        <datalist id="cat-options-batch"></datalist>
+        <div id="batch-results"></div>
+        <div id="batch-actions" style="margin-top:14px"></div>
+      </div>
+    </section>
+
+    <!-- --- مدیران --- -->
+    <section id="tab-admins" class="hidden">
+      <div class="card">
+        <h2>مدیران و دسترسی‌ها</h2>
+        <p class="muted">تغییر در رجیستری (admins.json) بلافاصله کامیت می‌شود؛ تغییر در لیست ساده
+        (<code>admins</code> داخل apps.json) با دکمه انتشار ذخیره می‌شود. هر دو لیست همگام نگه داشته می‌شوند.</p>
+
+        <h3 style="margin-top:16px">رجیستری ادمین‌ها (با تعیین دسترسی)</h3>
+        <table id="registry-table"></table>
+        <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:flex-end">
+          <div style="flex:0 1 240px">
+            <label>نام کاربری گیت‌هاب</label>
+            <input type="text" id="reg-new-login" dir="ltr">
+          </div>
+          <div>
+            <label>دسترسی‌ها</label>
+            <div>
+              <label class="checkbox"><input type="checkbox" id="reg-p-apps" checked> مدیریت اپ‌ها</label>
+              <label class="checkbox"><input type="checkbox" id="reg-p-admins"> مدیریت ادمین‌ها</label>
+              <label class="checkbox"><input type="checkbox" id="reg-p-store"> انتشار استور</label>
+            </div>
+          </div>
+          <button id="btn-reg-add">افزودن ادمین</button>
+        </div>
+
+        <h3 style="margin-top:24px">لیست ساده admins در apps.json</h3>
+        <div id="simple-admins"></div>
+        <div style="display:flex; gap:8px; margin-top:8px; max-width:340px">
+          <input type="text" id="simple-admin-new" dir="ltr" placeholder="username">
+          <button class="ghost" id="btn-simple-add">افزودن</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- --- دسته‌ها --- -->
+    <section id="tab-categories" class="hidden">
+      <div class="card">
+        <h2>دسته‌بندی‌ها</h2>
+        <p class="muted">چیپ‌های صفحه استور، سکشن‌ها و تب دسته‌ها از همین لیست تغذیه می‌شوند.</p>
+        <div id="cats-list"></div>
+        <div style="display:flex; gap:8px; margin-top:10px; max-width:340px">
+          <input type="text" id="cat-new" placeholder="نام دسته">
+          <button class="ghost" id="btn-cat-add">افزودن</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- --- انتشار --- -->
+    <section id="tab-publish" class="hidden">
+      <div class="card">
+        <h2>انتشار در گیت‌هاب</h2>
+        <div class="diff-stat" id="pub-stats"></div>
+        <p class="muted">انتشار یک کامیت واقعی با نام کاربری خودت در ریپوی کاتالوگ ثبت می‌کند.
+        تغییرات raw گیت‌هاب ممکن است تا ۵ دقیقه کش‌شده باشد.</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <button id="btn-publish">انتشار apps.json</button>
+          <button class="ghost" id="btn-discard">دورریختن تغییرات محلی</button>
+        </div>
+        <div id="pub-msg" style="margin-top:12px"></div>
+        <div id="awaiting-box" class="hidden" style="margin-top:18px; border-top:1px solid var(--border); padding-top:14px">
+          <h3>درخواست ورود به پنل</h3>
+          <p class="muted">توکن تو دسترسی push به ریپوی کاتالوگ دارد ولی هنوز در رجیستری ادمین‌ها نیست.
+          با ارسال درخواست، یک issue برای مالک ساخته می‌شود (اعلان ایمیلی می‌گیرد) و ربات کاتالوگ پس از تایید او، ادمین را با دسترسی «مدیریت اپ» ثبت می‌کند.</p>
+          <button id="btn-request-approval">ارسال درخواست تایید به مالک</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<script>
+'use strict';
+/* =====================================================================
+   پنل مدیریت وب Idol Store — کاملاً سمت مرورگر
+   کاتالوگ: apps.json (اپ‌ها + admins + categories) و admins.json (رجیستری)
+   ===================================================================== */
+
+const CFG_KEY = 'idol_panel_cfg_v1';
+const PERMS = ['manage_apps','manage_admins','update_store'];
+const PERM_LABELS = {manage_apps:'مدیریت اپ‌ها', manage_admins:'مدیریت ادمین‌ها', update_store:'انتشار استور'};
+const APK_SIZE_LIMIT = 250 * 1024 * 1024;
+
+const $ = s => document.querySelector(s);
+const today = () => new Date().toISOString().slice(0,10);
+
+const S = {
+  token:'', login:'', repo:'',
+  catalog:null, registry:null,
+  shaApps:null, shaAdmins:null,
+  role:'none', perms:new Set(),
+  rate:null,
+  snapshot:null,          // وضعیت هنگام ورود — برای تشخیص تغییرات
+  saving:false,
+  batchRows:[],
+  batchRunning:false,
+};
+
+/* ---------------- ذخیره/بازیابی تنظیمات ---------------- */
+function saveCfg(){
+  try{ localStorage.setItem(CFG_KEY, JSON.stringify({repo:S.repo, token:S.token})); }catch(_){}
+}
+function loadCfg(){
+  try{ return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; }catch(_){ return {}; }
+}
+function forgetCfg(){
+  try{ localStorage.removeItem(CFG_KEY); }catch(_){}
+}
+
+/* ---------------- GitHub API ---------------- */
+async function gh(path, opts={}){
+  const headers = {
+    'Accept':'application/vnd.github+json',
+    'X-GitHub-Api-Version':'2022-11-28',
+    ...(opts.headers||{}),
+  };
+  if(S.token) headers['Authorization'] = 'Bearer ' + S.token;
+  const r = await fetch('https://api.github.com' + path, {method:opts.method||'GET', headers, body:opts.body});
+  const rl = r.headers.get('x-ratelimit-remaining');
+  if(rl) { S.rate = rl; $('#hd-rate').textContent = `سهمیه API: ${rl}`; }
+  const txt = await r.text();
+  let data = null;
+  try{ data = txt ? JSON.parse(txt) : null; }catch(_){ data = txt; }
+  return {status:r.status, ok:r.ok, data};
+}
+
+function errText(status, data, fallback){
+  const msg = (data && data.message) || '';
+  if(status === 401) return 'توکن نامعتبر است (۴۰۱).';
+  if(status === 403) return msg.includes('rate limit')
+    ? 'سهمیه API گیت‌هاب تمام شده — کمی بعد دوباره تلاش کن.' : 'دسترسی نداری (۴۰۳).';
+  if(status === 404) return 'پیدا نشد (۴۰۴) — ریپو/فایل را بررسی کن.';
+  return msg || fallback || ('خطای ' + status);
+}
+
+function b64ToUtf8(b64){
+  const bin = atob(String(b64).replace(/\s/g,''));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder('utf-8').decode(bytes);
+}
+function utf8ToB64(s){
+  const bytes = new TextEncoder().encode(s);
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+
+async function readFile(repo, path){
+  const r = await gh(`/repos/${repo}/contents/${encodeURIComponent(path)}`);
+  if(r.status === 404) return null;
+  if(!r.ok) throw new Error(errText(r.status, r.data, 'خواندن فایل ناموفق بود'));
+  return {sha:r.data.sha, content:b64ToUtf8(r.data.content)};
+}
+
+async function commitFile(repo, path, message, content, sha){
+  const body = JSON.stringify({message, content:utf8ToB64(content), ...(sha ? {sha} : {})});
+  const r = await gh(`/repos/${repo}/contents/${encodeURIComponent(path)}`, {method:'PUT', body});
+  if(!(r.status >= 200 && r.status < 300)) throw new Error(errText(r.status, r.data, 'کامیت ناموفق بود'));
+  return r.data;
+}
+
+/* ---------------- ابزار لینک ---------------- */
+function repoFromUrl(input){
+  const s = String(input||'').trim().trimEnd('/');
+  let m = /^https?:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)/.exec(s);
+  if(m) return `${m[1]}/${m[2].replace(/\.git$/,'')}`;
+  m = /^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/.exec(s);
+  return m ? s : null;
+}
+
+/* ---------------- تشخیص APK یونیورسال (مثل خود اپ) ---------------- */
+function pickUniversalApk(assets){
+  const apks = (assets||[]).filter(a => String(a.name).toLowerCase().endsWith('.apk'));
+  if(!apks.length) return null;
+  const abiKw = ['arm64','armeabi','x86_64','x86','abi'];
+  const score = a => a.name.toLowerCase().includes('universal') ? 3
+    : (abiKw.some(k => a.name.toLowerCase().includes(k)) ? 1 : 2);
+  return apks.sort((a,b) => score(b)-score(a) || b.size-a.size)[0];
+}
+
+/* ---------------- خواندن نام پکیج از داخل APK ----------------
+   ZIP: پیمایش central directory و پیدا کردن AndroidManifest.xml
+   AXML: خواندن string pool و انتخاب اولین رشته‌ای شبیه نام پکیج */
+async function inflateRaw(u8){
+  const ds = new DecompressionStream('deflate-raw');
+  const stream = new Blob([u8]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+function extractManifest(u8){
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let eocd = -1;
+  for(let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error('ZIP نامعتبر');
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  for(let n = 0; n < count; n++){
+    if(dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize  = dv.getUint32(off + 20, true);
+    const nameLen = dv.getUint16(off + 28, true), extraLen = dv.getUint16(off + 30, true), commLen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(off + 46, off + 46 + nameLen));
+    if(name === 'AndroidManifest.xml'){
+      const lName = dv.getUint16(lho + 26, true), lExtra = dv.getUint16(lho + 28, true);
+      const start = lho + 30 + lName + lExtra;
+      return {comp: u8.subarray(start, start + csize), method};
+    }
+    off += 46 + nameLen + extraLen + commLen;
+  }
+  throw new Error('AndroidManifest.xml در APK پیدا نشد');
+}
+
+function axmlStrings(u8){
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  if(dv.getUint16(0, true) !== 0x0003) throw new Error('AXML نامعتبر');
+  const p = 8; // اولین chunk داخلی = string pool
+  if(dv.getUint16(p, true) !== 0x0001) throw new Error('string pool پیدا نشد');
+  const count = dv.getUint32(p + 8, true);
+  const flags = dv.getUint32(p + 16, true);
+  const stringsStart = dv.getUint32(p + 20, true);
+  const isUtf8 = (flags & 0x100) !== 0;
+  const out = [];
+  for(let i = 0; i < count; i++){
+    let s = p + stringsStart + dv.getUint32(p + 28 + i*4, true);
+    let str = '';
+    if(isUtf8){
+      const varint = idx => { const b = u8[idx]; return (b & 0x80) ? (((b & 0x7f) << 8) | u8[idx+1]) : b; };
+      let len = varint(s); s += (u8[s] & 0x80) ? 2 : 1;          // طول کاراکترها
+      const blen = varint(s); s += (u8[s] & 0x80) ? 2 : 1;       // طول بایت‌ها
+      str = new TextDecoder().decode(u8.subarray(s, s + blen));
+      void len;
+    } else {
+      let len = dv.getUint16(s, true); s += 2;
+      if(len & 0x8000){ len = ((len & 0x7fff) << 16) | dv.getUint16(s, true); s += 2; }
+      str = new TextDecoder('utf-16le').decode(u8.subarray(s, s + len*2));
+    }
+    out.push(str);
+  }
+  return out;
+}
+
+function pickPackageName(strings){
+  const re = /^[a-z][a-z0-9_]*(\.[A-Za-z0-9_]+)+$/;
+  const skip = /^android$|^android\.|^androidx\.|^com\.android\.internal|^com\.google\.android\.c2dm|^org\.apache\.http/;
+  const cands = strings.filter(s => s.length <= 100 && re.test(s) && !skip.test(s) && !s.includes('://'));
+  return cands.find(s => s === s.toLowerCase()) || cands[0] || null;
+}
+
+async function packageNameFromApk(repo, asset){
+  if(!asset || asset.size > APK_SIZE_LIMIT) return null;
+  const r = await fetch(`https://api.github.com/repos/${repo}/releases/assets/${asset.id}`, {
+    headers:{'Authorization':'Bearer ' + S.token, 'Accept':'application/octet-stream',
+             'X-GitHub-Api-Version':'2022-11-28'}
+  });
+  if(!r.ok) return null;
+  const buf = await r.arrayBuffer();
+  const u8 = new Uint8Array(buf);
+  const {comp, method} = extractManifest(u8);
+  const raw = method === 0 ? comp.slice() : await inflateRaw(comp);
+  return pickPackageName(axmlStrings(raw));
+}
+
+/* ---------------- آیکون: فایل آیکون در ریشه ریپو یا آواتار مالک ---------------- */
+function iconCandidates(rootEntries, info){
+  const list = [];
+  const pref = [/^icon\.png$/i, /^app[-_]?icon\.png$/i, /^ic_launcher.*\.png$/i, /^logo\.png$/i,
+                /^icon\.webp$/i, /^logo\.webp$/i, /^icon\.(jpe?g)$/i, /^logo\.(jpe?g)$/i,
+                /icon/i, /logo/i];
+  const branch = info.default_branch || 'main';
+  const base = `https://raw.githubusercontent.com/${info.full_name}/${branch}/`;
+  for(const f of rootEntries.filter(e => e.type === 'file')){
+    for(let r = 0; r < pref.length; r++){
+      if(pref[r].test(f.name) && /\.(png|webp|jpe?g)$/i.test(f.name)){
+        list.push({rank:r, url:base + f.path.split('/').map(encodeURIComponent).join('/')});
+        break;
+      }
+    }
+  }
+  list.sort((a,b) => a.rank - b.rank);
+  const avatar = info.owner && info.owner.avatar_url;
+  if(avatar) list.push({rank:99, url:avatar});
+  return list.map(x => x.url);
+}
+
+function looksSquare(url){ // چک مربع‌بودن آیکون با لود تصویر
+  return new Promise(res => {
+    const img = new Image();
+    const t = setTimeout(() => res(false), 7000);
+    img.onload = () => { clearTimeout(t);
+      const r = img.naturalWidth / Math.max(1, img.naturalHeight);
+      res(img.naturalWidth >= 64 && r > 0.7 && r < 1.4);
+    };
+    img.onerror = () => { clearTimeout(t); res(false); };
+    img.src = url;
+  });
+}
+
+async function resolveIcon(rootEntries, info){
+  for(const url of iconCandidates(rootEntries, info)){
+    if(await looksSquare(url)) return url;
+  }
+  return info.owner && info.owner.avatar_url || '';
+}
+
+/* ---------------- دریافت کامل اطلاعات یک پروژه ---------------- */
+async function fetchRepoData(rawLink){
+  const repo = repoFromUrl(rawLink);
+  if(!repo) throw new Error('لینک نامعتبر — owner/repo یا آدرس گیت‌هاب بده.');
+
+  const rInfo = await gh(`/repos/${repo}`);
+  if(!rInfo.ok) throw new Error(errText(rInfo.status, rInfo.data, 'ریپو پیدا نشد'));
+  const info = rInfo.data;
+
+  let latest = null;
+  const rRel = await gh(`/repos/${repo}/releases?per_page=30`);
+  if(rRel.ok && Array.isArray(rRel.data)){
+    latest = rRel.data.filter(x => !x.draft && !x.prerelease)[0] || null;
+  }
+
+  let icon = '';
+  try{
+    const rRoot = await gh(`/repos/${repo}/contents/`);
+    if(rRoot.ok && Array.isArray(rRoot.data)) icon = await resolveIcon(rRoot.data, info);
+  }catch(_){ icon = (info.owner && info.owner.avatar_url) || ''; }
+
+  let pkg = null;
+  const apk = latest ? pickUniversalApk(latest.assets) : null;
+  if(apk){
+    try{ pkg = await packageNameFromApk(repo, apk); }catch(_){ pkg = null; }
+  }
+
+  const base = String(info.name || repo.split('/')[1] || '');
+  return {
+    id: repo.split('/')[1].toLowerCase(),
+    name: base,
+    developer: (info.owner && info.owner.login) || repo.split('/')[0],
+    category: '',
+    description: info.description || '',
+    iconUrl: icon,
+    packageName: pkg || '',
+    github: repo,
+    website: (info.homepage || '').trim(),
+    email: '',
+    telegram: '',
+    _latestTag: latest ? latest.tag_name : null,
+    _latestDate: latest ? (latest.published_at || '').slice(0,10) : null,
+    _stars: info.stargazers_count,
+    _apk: apk ? apk.name : null,
+  };
+}
+
+/* ---------------- مدل کاتالوگ ---------------- */
+function normalizeCatalog(raw, pathIsRootList){
+  if(pathIsRootList || Array.isArray(raw)){
+    return {apps: raw, admins: [], categories: [], updatedAt: null, _rootList: true};
+  }
+  return {
+    apps: Array.isArray(raw.apps) ? raw.apps : [],
+    admins: Array.isArray(raw.admins) ? raw.admins : [],
+    categories: Array.isArray(raw.categories) ? raw.categories : [],
+    updatedAt: raw.updatedAt || null,
+  };
+}
+function catalogToJson(c){
+  const out = {};
+  out.updatedAt = today();
+  out.admins = c.admins;
+  out.categories = c.categories;
+  out.apps = c.apps;
+  return JSON.stringify(out, null, 2) + '\n';
+}
+function appObj(d){ // آبجکت تمیز برای ذخیره در کاتالوگ
+  const o = {id:d.id, name:d.name, github:d.github};
+  for(const k of ['developer','category','description','iconUrl','packageName','website','email','telegram']){
+    const v = String(d[k] || '').trim();
+    if(v) o[k] = v;
+  }
+  return o;
+}
+function findExisting(apps, d){
+  return apps.find(a => String(a.id||'').toLowerCase() === String(d.id||'').toLowerCase())
+      || apps.find(a => repoFromUrl(a.github) === repoFromUrl(d.github));
+}
+
+/* ---------------- نقش‌ها ---------------- */
+async function hasPushAccess(repo, login){
+  const r = await gh(`/repos/${repo}/collaborators/${encodeURIComponent(login)}?permission=push`);
+  return r.status === 204;
+}
+function computeRole(){
+  const owner = (S.registry && S.registry.owner) || S.repo.split('/')[0];
+  if(S.login.toLowerCase() === String(owner).toLowerCase()){
+    S.role = 'owner'; S.perms = new Set(PERMS); return;
+  }
+  const entry = S.registry && (S.registry.admins||[]).find(a => String(a.login||'').toLowerCase() === S.login.toLowerCase());
+  if(entry && S.pushOk){
+    S.role = 'admin'; S.perms = new Set(entry.permissions || []); return;
+  }
+  if(S.pushOk){ S.role = 'awaiting'; S.perms = new Set(); return; }
+  S.role = 'none'; S.perms = new Set();
+}
+const can = p => S.role === 'owner' || (S.role === 'admin' && S.perms.has(p));
+
+/* ---------------- ورود ---------------- */
+async function doLogin(){
+  const repo = repoFromUrl($('#in-repo').value);
+  const token = $('#in-token').value.trim();
+  if(!repo){ $('#login-msg').textContent = 'ریپو را به شکل owner/repo وارد کن.'; return; }
+  if(!token){ $('#login-msg').textContent = 'توکن را وارد کن.'; return; }
+  $('#login-msg').textContent = 'در حال بررسی…';
+  $('#btn-login').disabled = true;
+  try{
+    S.repo = repo; S.token = token;
+    const rUser = await gh('/user');
+    if(!rUser.ok) throw new Error(errText(rUser.status, rUser.data, 'توکن نامعتبر است'));
+    S.login = rUser.data.login;
+    S.pushOk = await hasPushAccess(repo, S.login);
+
+    const f = await readFile(repo, 'apps.json');
+    S.shaApps = f ? f.sha : null;
+    S.catalog = f ? normalizeCatalog(JSON.parse(f.content)) : {apps:[],admins:[],categories:[],updatedAt:null};
+
+    const rj = await readFile(repo, 'admins.json');
+    S.shaAdmins = rj ? rj.sha : null;
+    S.registry = rj ? JSON.parse(rj.content) : null;
+
+    computeRole();
+    saveCfg();
+    snapshotState();
+    showPanel();
+  }catch(e){
+    $('#login-msg').textContent = e.message || 'ورود ناموفق بود';
+    S.token = '';
+  }finally{
+    $('#btn-login').disabled = false;
+  }
+}
+
+function snapshotState(){
+  S.snapshot = JSON.stringify({
+    apps:S.catalog.apps, admins:S.catalog.admins, categories:S.catalog.categories,
+  });
+}
+function isDirty(){
+  return S.snapshot !== JSON.stringify({
+    apps:S.catalog.apps, admins:S.catalog.admins, categories:S.catalog.categories,
+  });
+}
+function diffStats(){
+  const before = JSON.parse(S.snapshot);
+  const after = {apps:S.catalog.apps, admins:S.catalog.admins, categories:S.catalog.categories};
+  const oldIds = new Set(before.apps.map(a => String(a.id)));
+  const newIds = new Set(after.apps.map(a => String(a.id)));
+  let added = 0, removed = 0, edited = 0;
+  after.apps.forEach(a => { if(!oldIds.has(String(a.id))) added++; });
+  before.apps.forEach(a => {
+    if(!newIds.has(String(a.id))) removed++;
+    else{
+      const now = after.apps.find(x => String(x.id) === String(a.id));
+      if(JSON.stringify(now) !== JSON.stringify(a)) edited++;
+    }
+  });
+  return {added, removed, edited, dirty:isDirty()};
+}
+
+/* ---------------- رندر ---------------- */
+function show(el, on){ el.classList.toggle('hidden', !on); }
+
+function showPanel(){
+  show($('#view-setup'), false);
+  show($('#view-panel'), true);
+  show($('#hd-repo'), true); $('#hd-repo').textContent = S.repo;
+  show($('#hd-user'), true); $('#hd-user').textContent = '@' + S.login;
+  show($('#hd-rate'), true);
+  show($('#btn-logout'), true);
+  show($('#awaiting-box'), S.role === 'awaiting');
+  const roleEl = $('#hd-role');
+  roleEl.className = 'badge ' + (S.role === 'owner' ? 'owner' : S.role === 'admin' ? 'admin' : S.role);
+  roleEl.textContent = S.role === 'owner' ? 'مالک' : S.role === 'admin'
+    ? `ادمین (${[...S.perms].map(p => PERM_LABELS[p]).join('، ') || 'بدون دسترسی'})`
+    : S.role === 'awaiting' ? 'در انتظار تایید مالک' : 'بدون دسترسی نوشتن';
+  renderTabs();
+  renderApps(); renderRegistry(); renderSimpleAdmins(); renderCats(); renderPublish();
+  if(S.role === 'awaiting') toast('دسترسی push داری ولی هنوز در رجیستری ادمین‌ها نیستی — از تب انتشار درخواست تایید بفرست.', 'err');
+  if(S.role === 'none') toast('این توکن دسترسی نوشتن به ریپوی کاتالوگ ندارد؛ فقط حالت نمایشی.', 'err');
+}
+
+function renderTabs(){
+  const tabs = [
+    ['apps','پروژه‌ها', can('manage_apps')],
+    ['batch','ثبت گروهی', can('manage_apps')],
+    ['admins','مدیران', S.role === 'owner'],
+    ['categories','دسته‌ها', can('manage_apps')],
+    ['publish','انتشار', true],
+  ];
+  const nav = $('#tabs');
+  nav.innerHTML = '';
+  let first = null;
+  tabs.forEach(([id, label, enabled]) => {
+    if(enabled && !first) first = id;
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.className = id === S.curTab ? 'active' : '';
+    if(!enabled){ b.disabled = true; b.title = 'دسترسی نداری'; }
+    b.onclick = () => { S.curTab = id; renderTabs(); };
+    nav.appendChild(b);
+  });
+  if(!S.curTab || !tabs.find(t => t[0] === S.curTab && t[2])) S.curTab = first || 'publish';
+  ['apps','batch','admins','categories','publish'].forEach(id =>
+    show($('#tab-' + id), id === S.curTab));
+}
+
+/* ---------- پروژه‌ها ---------- */
+function renderApps(){
+  const q = ($('#apps-search').value || '').trim().toLowerCase();
+  const list = $('#apps-list');
+  list.innerHTML = '';
+  const apps = S.catalog.apps.filter(a =>
+    !q || JSON.stringify([a.name,a.id,a.developer,a.category,a.github,a.description]).toLowerCase().includes(q));
+  if(!apps.length){
+    list.innerHTML = `<div class="center muted">اپی پیدا نشد.</div>`;
+    return;
+  }
+  apps.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'app-item';
+    const icon = a.iconUrl ? `<img src="${escAttr(a.iconUrl)}" loading="lazy" alt="">` : `<img alt="">`;
+    div.innerHTML = `${icon}
+      <div class="info">
+        <div class="name">${esc(a.name)} <span class="muted" style="font-weight:400; font-size:11px">${esc(a.category||'')}</span></div>
+        <div class="meta">
+          <span>${esc(a.developer||'')}</span>
+          <span class="pkg">${esc(a.packageName||a.id||'')}</span>
+          <a href="https://github.com/${escAttr(a.github)}" target="_blank" dir="ltr">${esc(a.github)}</a>
+        </div>
+      </div>
+      <button class="ghost sm">ویرایش</button>
+      <button class="danger sm">حذف</button>`;
+    const [btnEdit, btnDel] = div.querySelectorAll('button');
+    btnEdit.onclick = () => openAppModal(a);
+    btnDel.onclick = () => {
+      if(!confirm(`«${a.name}» از لیست حذف شود؟ (تا انتشار، برگشت‌پذیر است)`)) return;
+      S.catalog.apps = S.catalog.apps.filter(x => x !== a);
+      renderApps(); renderPublish();
+    };
+    list.appendChild(div);
+  });
+}
+
+function openAppModal(existing){
+  const d = existing ? {...existing} : {id:'',name:'',github:'',developer:'',category:'',description:'',iconUrl:'',packageName:'',website:'',email:'',telegram:''};
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.innerHTML = `<div class="modal">
+    <h2>${existing ? 'ویرایش اپ' : 'افزودن اپ'}</h2>
+    <div class="row"><div><label>github *</label><input type="text" id="m-github" dir="ltr"></div>
+    <div><label>name *</label><input type="text" id="m-name"></div></div>
+    <div class="row"><div><label>developer</label><input type="text" id="m-developer"></div>
+    <div><label>category</label><input type="text" id="m-category" list="cat-options"></div></div>
+    <datalist id="cat-options">${S.catalog.categories.map(c => `<option value="${escAttr(c)}">`).join('')}</datalist>
+    <label>description</label><textarea id="m-description" style="min-height:70px; direction:rtl; text-align:right; font-family:inherit"></textarea>
+    <div class="row"><div><label>packageName</label><input type="text" id="m-packageName" dir="ltr"></div>
+    <div><label>id</label><input type="text" id="m-id" dir="ltr"></div></div>
+    <div class="row"><div><label>iconUrl</label><input type="text" id="m-iconUrl" dir="ltr"></div>
+    <div><label>website</label><input type="text" id="m-website" dir="ltr"></div></div>
+    <div class="row"><div><label>email</label><input type="text" id="m-email" dir="ltr"></div>
+    <div><label>telegram</label><input type="text" id="m-telegram" dir="ltr"></div></div>
+    <div id="m-latest" class="muted" style="margin-top:8px"></div>
+    <div style="display:flex; gap:10px; margin-top:16px; align-items:center">
+      <button id="m-fetch" class="ghost">دریافت خودکار از گیت‌هاب</button>
+      <div style="flex:1"></div>
+      <button class="ghost" id="m-cancel">انصراف</button>
+      <button id="m-save">ذخیره</button>
+    </div>
+    <div id="m-msg" class="muted" style="margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const g = id => ov.querySelector('#' + id);
+  ['github','name','developer','category','description','packageName','id','iconUrl','website','email','telegram']
+    .forEach(k => { g('m-' + k).value = d[k] || ''; });
+  const close = () => ov.remove();
+  g('m-cancel').onclick = close;
+
+  g('m-fetch').onclick = async () => {
+    const link = g('m-github').value;
+    g('m-msg').innerHTML = '<span class="spinner"></span> در حال دریافت…';
+    try{
+      const f = await fetchRepoData(link);
+      // فقط فیلدهای خالی را پر کن تا کار دستی از بین نرود
+      ['name','developer','description','iconUrl','packageName','website','id'].forEach(k => {
+        if(!g('m-' + k).value.trim() && f[k]) g('m-' + k).value = f[k];
+      });
+      if(!g('m-github').value.trim()) g('m-github').value = f.github;
+      g('m-latest').textContent = f._latestTag ? `آخرین ریلیز پایدار: ${f._latestTag} (${f._latestDate||'—'})${f._apk ? ' — APK: ' + f._apk : ''}` : 'این ریپو ریلیز پایدار ندارد.';
+      g('m-msg').textContent = '';
+    }catch(e){ g('m-msg').textContent = 'خطا: ' + e.message; }
+  };
+
+  g('m-save').onclick = () => {
+    const nd = {...d};
+    ['github','name','developer','category','description','packageName','id','iconUrl','website','email','telegram']
+      .forEach(k => nd[k] = g('m-' + k).value.trim());
+    if(!nd.github || !nd.name){ g('m-msg').textContent = 'github و name الزامی‌اند.'; return; }
+    if(!repoFromUrl(nd.github)){ g('m-msg').textContent = 'آدرس گیت‌هاب نامعتبر است.'; return; }
+    if(!nd.id) nd.id = repoFromUrl(nd.github).split('/')[1].toLowerCase();
+    const clean = appObj(nd);
+    const idx = S.catalog.apps.findIndex(a => a === existing || String(a.id) === String(clean.id));
+    if(existing) S.catalog.apps[idx] = {...existing, ...clean};
+    else if(idx >= 0) S.catalog.apps[idx] = clean; // id تکراری → به‌روزرسانی
+    else S.catalog.apps.push(clean);
+    renderApps(); renderPublish();
+    close();
+    toast(existing ? 'ویرایش شد (منتشر نشده).' : 'افزوده شد (منتشر نشده).', 'ok');
+  };
+}
+
+/* ---------- ثبت گروهی ---------- */
+function renderBatch(){
+  $('#cat-options-batch').innerHTML = S.catalog.categories.map(c => `<option value="${escAttr(c)}">`).join('');
+  const box = $('#batch-results');
+  box.innerHTML = '';
+  $('#batch-actions').innerHTML = '';
+  const ok = S.batchRows.filter(r => r.status === 'ok' || r.status === 'dup');
+  if(ok.length){
+    const btn = document.createElement('button');
+    btn.textContent = `افزودن ${ok.length} اپ به لیست استور`;
+    btn.onclick = () => {
+      const upd = $('#batch-update-dup').checked;
+      let added = 0, updated = 0;
+      ok.forEach(r => {
+        const clean = appObj(r.data);
+        const existing = findExisting(S.catalog.apps, r.data);
+        if(existing){ if(upd){ S.catalog.apps[S.catalog.apps.indexOf(existing)] = {...existing, ...clean}; updated++; } }
+        else { S.catalog.apps.push(clean); added++; }
+        r.added = true;
+      });
+      S.batchRows = [];
+      renderApps(); renderBatch(); renderPublish();
+      toast(`${added} اپ اضافه و ${updated} اپ به‌روزرسانی شد (منتشر نشده).`, 'ok');
+    };
+    $('#batch-actions').appendChild(btn);
+  }
+  S.batchRows.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'batch-row';
+    if(r.status === 'wait'){
+      div.innerHTML = `<div class="head"><span class="spinner"></span>
+        <span class="muted" dir="ltr">${esc(r.link)}</span> — در حال دریافت…</div>`;
+      box.appendChild(div);
+      return;
+    }
+    if(r.status === 'err'){
+      div.innerHTML = `<div class="head"><span class="status err">خطا</span>
+        <span class="muted" dir="ltr">${esc(r.link)}</span>
+        <div style="flex:1"></div>
+        <button class="ghost sm">تلاش مجدد</button>
+        <button class="danger sm">حذف</button></div>
+        <div class="muted" style="margin-top:6px">${esc(r.error||'')}</div>`;
+      const [bRetry, bDel] = div.querySelectorAll('button');
+      bRetry.onclick = () => runBatchRow(r);
+      bDel.onclick = () => { S.batchRows.splice(S.batchRows.indexOf(r), 1); renderBatch(); };
+      box.appendChild(div);
+      return;
+    }
+    const d = r.data;
+    const dupLabel = r.status === 'dup' ? (r.added ? 'به‌روزرسانی شد' : 'تکراری — به‌روزرسانی می‌شود') : 'دریافت شد';
+    div.innerHTML = `<div class="head">
+        <img src="${escAttr(d.iconUrl||'')}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
+        <div><div style="font-weight:700">${esc(d.name)}</div>
+        <div class="gh">${esc(d.github)}</div></div>
+        <div style="flex:1"></div>
+        <span class="status ${r.status}">${dupLabel}</span>
+        ${d._latestTag ? `<span class="status wait">آخرین ریلیز: ${esc(d._latestTag)}</span>` : '<span class="status wait">بدون ریلیز پایدار</span>'}
+        ${d._stars != null ? `<span class="status wait">★ ${d._stars}</span>` : ''}
+        <button class="danger sm">حذف</button>
+      </div>
+      <div class="fields">
+        <div><label>name</label><input type="text" data-k="name" value="${escAttr(d.name)}"></div>
+        <div><label>category</label><input type="text" data-k="category" list="cat-options-batch" value="${escAttr(d.category)}"></div>
+        <div style="grid-column:1/-1"><label>description</label><input type="text" data-k="description" value="${escAttr(d.description)}"></div>
+        <div><label>packageName</label><input type="text" data-k="packageName" dir="ltr" value="${escAttr(d.packageName)}" placeholder="خودکار از APK — قابل ویرایش"></div>
+        <div><label>developer</label><input type="text" data-k="developer" value="${escAttr(d.developer)}"></div>
+        <div><label>id</label><input type="text" data-k="id" dir="ltr" value="${escAttr(d.id)}"></div>
+        <div><label>website</label><input type="text" data-k="website" dir="ltr" value="${escAttr(d.website)}"></div>
+      </div>
+      <div class="muted" style="margin-top:6px">${d._apk ? 'APK: ' + esc(d._apk) : 'APK یونیورسال پیدا نشد — packageName را دستی وارد کن.'}</div>`;
+    div.querySelectorAll('input[data-k]').forEach(inp => {
+      inp.oninput = () => { d[inp.dataset.k] = inp.value; };
+    });
+    div.querySelector('button.danger').onclick = () => { S.batchRows.splice(S.batchRows.indexOf(r), 1); renderBatch(); };
+    box.appendChild(div);
+  });
+}
+
+async function runBatchRow(r){
+  r.status = 'wait'; r.error = null;
+  renderBatch();
+  try{
+    r.data = await fetchRepoData(r.link);
+    r.status = findExisting(S.catalog.apps, r.data) ? 'dup' : 'ok';
+  }catch(e){
+    r.status = 'err'; r.error = e.message;
+  }
+  renderBatch();
+}
+
+async function startBatch(){
+  if(S.batchRunning) return;
+  const links = $('#batch-links').value.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  if(!links.length){ toast('حداقل یک لینک بده.', 'err'); return; }
+  S.batchRunning = true;
+  $('#btn-batch-fetch').disabled = true;
+  show($('#batch-progress'), true);
+  const prog = $('#batch-progress').firstElementChild;
+  let done = 0;
+  for(const link of links){
+    const r = {link, status:'wait'};
+    S.batchRows.push(r);
+    renderBatch();
+    prog.style.width = (done / links.length * 100) + '%';
+    await runBatchRow(r);
+    done++;
+    prog.style.width = (done / links.length * 100) + '%';
+  }
+  prog.style.width = '100%';
+  setTimeout(() => show($('#batch-progress'), false), 800);
+  $('#btn-batch-fetch').disabled = false;
+  S.batchRunning = false;
+  const okN = S.batchRows.filter(r => r.status === 'ok' || r.status === 'dup').length;
+  const errN = S.batchRows.filter(r => r.status === 'err').length;
+  $('#batch-status').textContent = `${okN} موفق، ${errN} ناموفق`;
+  renderBatch();
+}
+
+/* ---------- مدیران (رجیستری) ---------- */
+function renderRegistry(){
+  const t = $('#registry-table');
+  if(S.role !== 'owner'){ t.innerHTML = '<tr><td class="muted">فقط مالک.</td></tr>'; return; }
+  const reg = S.registry || {schemaVersion:1, owner:S.repo.split('/')[0], admins:[]};
+  const admins = reg.admins || [];
+  let html = '<tr><th>کاربر</th><th>دسترسی‌ها</th><th>تاریخ افزودن</th><th></th></tr>';
+  admins.forEach((a, i) => {
+    html += `<tr><td dir="ltr">@${esc(a.login)}</td><td>
+      ${PERMS.map(p => `<label class="checkbox"><input type="checkbox" data-i="${i}" data-p="${p}" ${((a.permissions||[]).includes(p)) ? 'checked' : ''}> ${PERM_LABELS[p]}</label>`).join('')}
+      </td><td class="muted">${esc(a.added_at||'—')}</td>
+      <td><button class="danger sm" data-del="${i}">حذف</button></td></tr>`;
+  });
+  if(!admins.length) html += '<tr><td colspan="4" class="muted">هنوز ادمینی ثبت نشده.</td></tr>';
+  t.innerHTML = html;
+  t.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.onchange = () => updateRegistryAdmin(admins[+cb.dataset.i].login, cb.dataset.p, cb.checked);
+  });
+  t.querySelectorAll('button[data-del]').forEach(b => {
+    b.onclick = async () => {
+      const login = admins[+b.dataset.del].login;
+      if(!confirm(`ادمین @${login} حذف شود؟ توکن او بلافاصله بی‌اثر نمی‌شود ولی از رجیستری پاک می‌شود.`)) return;
+      reg.admins = admins.filter(x => x !== admins[+b.dataset.del]);
+      // همگام با لیست ساده
+      S.catalog.admins = S.catalog.admins.filter(x => String(x).toLowerCase() !== login.toLowerCase());
+      renderRegistry(); renderSimpleAdmins(); renderPublish();
+      await publishRegistry('ادمین حذف شد');
+    };
+  });
+}
+
+async function updateRegistryAdmin(login, perm, on){
+  const reg = S.registry || {schemaVersion:1, owner:S.repo.split('/')[0], admins:[]};
+  const a = reg.admins.find(x => String(x.login).toLowerCase() === login.toLowerCase());
+  if(!a) return;
+  const set = new Set(a.permissions || []);
+  if(on) set.add(perm); else set.delete(perm);
+  a.permissions = PERMS.filter(p => set.has(p));
+  renderRegistry();
+  await publishRegistry(`دسترسی @${login} تغییر کرد`);
+}
+
+$('#btn-reg-add').onclick = async () => {
+  if(S.role !== 'owner') return;
+  const login = $('#reg-new-login').value.trim();
+  if(!login) return;
+  const perms = [];
+  if($('#reg-p-apps').checked) perms.push('manage_apps');
+  if($('#reg-p-admins').checked) perms.push('manage_admins');
+  if($('#reg-p-store').checked) perms.push('update_store');
+  const reg = S.registry || {schemaVersion:1, owner:S.repo.split('/')[0], admins:[]};
+  const existing = reg.admins.find(x => String(x.login).toLowerCase() === login.toLowerCase());
+  if(existing){
+    existing.permissions = perms;
+    existing.added_at = today();
+  } else {
+    reg.admins.push({login, permissions:perms, added_at:today()});
+  }
+  S.registry = reg;
+  // همگام با لیست ساده apps.json
+  if(!S.catalog.admins.some(x => String(x).toLowerCase() === login.toLowerCase())) S.catalog.admins.push(login);
+  $('#reg-new-login').value = '';
+  renderRegistry(); renderSimpleAdmins(); renderPublish();
+  await publishRegistry(`ادمین @${login} ${existing ? 'به‌روزرسانی' : 'اضافه'} شد`);
+};
+
+async function publishRegistry(why){
+  if(S.role !== 'owner' || !S.registry) return;
+  try{
+    const msg = `chore: update admin registry (admins.json) — ${why} [skip ci]`;
+    const res = await commitFile(S.repo, 'admins.json', msg, JSON.stringify(S.registry, null, 2) + '\n', S.shaAdmins);
+    if(res && res.content && res.content.sha) S.shaAdmins = res.content.sha;
+    toast('رجیستری ادمین‌ها در گیت‌هاب ذخیره شد ✔', 'ok');
+  }catch(e){
+    toast('ذخیره رجیستری ناموفق: ' + e.message, 'err');
+  }
+}
+
+/* ---------- لیست ساده ادمین‌ها ---------- */
+function renderSimpleAdmins(){
+  const box = $('#simple-admins');
+  box.innerHTML = '';
+  if(S.role !== 'owner'){ box.innerHTML = '<span class="muted">فقط مالک.</span>'; return; }
+  S.catalog.admins.forEach(name => {
+    const c = document.createElement('span');
+    c.className = 'chip';
+    c.innerHTML = `<span dir="ltr">${esc(name)}</span><button title="حذف">×</button>`;
+    c.querySelector('button').onclick = () => {
+      S.catalog.admins = S.catalog.admins.filter(x => x !== name);
+      renderSimpleAdmins(); renderPublish();
+    };
+    box.appendChild(c);
+  });
+  if(!S.catalog.admins.length) box.innerHTML = '<span class="muted">خالی — مالک به‌صورت پیش‌فرض دسترسی دارد.</span>';
+}
+$('#btn-simple-add').onclick = () => {
+  if(S.role !== 'owner') return;
+  const v = $('#simple-admin-new').value.trim();
+  if(!v) return;
+  if(!S.catalog.admins.some(x => x.toLowerCase() === v.toLowerCase())) S.catalog.admins.push(v);
+  $('#simple-admin-new').value = '';
+  renderSimpleAdmins(); renderPublish();
+};
+
+/* ---------- دسته‌ها ---------- */
+function renderCats(){
+  const box = $('#cats-list');
+  box.innerHTML = '';
+  S.catalog.categories.forEach(c => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = `${esc(c)}<button title="حذف">×</button>`;
+    chip.querySelector('button').onclick = () => {
+      S.catalog.categories = S.catalog.categories.filter(x => x !== c);
+      renderCats(); renderPublish();
+    };
+    box.appendChild(chip);
+  });
+  if(!S.catalog.categories.length) box.innerHTML = '<span class="muted">خالی</span>';
+}
+$('#btn-cat-add').onclick = () => {
+  const v = $('#cat-new').value.trim();
+  if(!v) return;
+  if(!S.catalog.categories.some(x => x.toLowerCase() === v.toLowerCase())) S.catalog.categories.push(v);
+  $('#cat-new').value = '';
+  renderCats(); renderPublish();
+};
+
+/* ---------- انتشار ---------- */
+function renderPublish(){
+  const st = diffStats();
+  $('#pub-stats').innerHTML = `
+    <div><b>${S.catalog.apps.length}</b><span class="muted">اپ در استور</span></div>
+    <div><b style="color:var(--ok)">${st.added}</b><span class="muted">جدید</span></div>
+    <div><b style="color:var(--warn)">${st.edited}</b><span class="muted">ویرایش‌شده</span></div>
+    <div><b style="color:var(--err)">${st.removed}</b><span class="muted">حذف‌شده</span></div>`;
+  $('#btn-publish').disabled = !st.dirty || S.saving;
+}
+$('#btn-discard').onclick = () => {
+  if(!confirm('همه تغییرات ذخیره‌نشده دور ریخته شود و از گیت‌هاب دوباره خوانده شود؟')) return;
+  location.reload();
+};
+$('#btn-publish').onclick = async () => {
+  if(S.saving) return;
+  const st = diffStats();
+  if(!st.dirty) return;
+  S.saving = true; renderPublish();
+  $('#pub-msg').innerHTML = '<span class="spinner"></span> در حال انتشار…';
+  try{
+    // دفاع نهایی: توکن واقعاً دسترسی push دارد؟
+    if(!(await hasPushAccess(S.repo, S.login))) throw new Error('گیت‌هاب تأیید کرد که توکن تو دسترسی نوشتن ندارد.');
+    const json = catalogToJson(S.catalog);
+    const res = await commitFile(S.repo, 'apps.json',
+      `Idol Store admin (${S.login}): update apps.json`, json, S.shaApps);
+    if(res && res.content && res.content.sha) S.shaApps = res.content.sha;
+    snapshotState();
+    $('#pub-msg').innerHTML = `<span style="color:var(--ok)">✔ منتشر شد — کامیت <code dir="ltr">${esc(res.commit && res.commit.sha ? res.commit.sha.slice(0,7) : '')}</code> در ریپوی کاتالوگ ثبت شد.</span>`;
+    toast('کاتالوگ در گیت‌هاب منتشر شد ✔', 'ok');
+  }catch(e){
+    $('#pub-msg').innerHTML = `<span style="color:var(--err)">✖ ${esc(e.message)}</span>`;
+  }finally{
+    S.saving = false; renderPublish();
+  }
+};
+
+/* ---------------- درخواست تایید ادمین (مثل پنل داخل اپ: issue برای مالک) ---------------- */
+$('#btn-request-approval').onclick = async () => {
+  if(!S.login) return;
+  const btn = $('#btn-request-approval');
+  btn.disabled = true;
+  try{
+    const approveTitle = `[admin-approve] login=${S.login} perms=manage_apps`;
+    const approveUrl = 'https://github.com/' + S.repo + '/issues/new?title=' +
+      encodeURIComponent(approveTitle) +
+      '&body=' + encodeURIComponent(`Approve admin ${S.login} with: manage_apps\n(درخواست اولیه: [admin-access] ${S.login})`);
+    const r = await gh(`/repos/${S.repo}/issues`, {method:'POST', body:JSON.stringify({
+      title:`[admin-access] ${S.login}`,
+      body:`Admin login request from web admin panel.\n\nlogin: ${S.login}\n\n` +
+           `**--- تایید (برای سازنده) ---**\nلینک تایید با دسترسی «مدیریت اپ»:\n\n${approveUrl}\n\n` +
+           `بعد از باز کردن لینک و ثبت issue، ربات ادمین را به admins.json اضافه می‌کند.`,
+    })});
+    if(r.ok) toast(`درخواست ارسال شد — issue #${r.data.number} برای مالک ساخته شد ✔`, 'ok');
+    else throw new Error(errText(r.status, r.data, 'ساخت issue ناموفق بود'));
+  }catch(e){
+    toast('ارسال درخواست ناموفق: ' + e.message, 'err');
+  }finally{ btn.disabled = false; }
+};
+
+/* ---------------- خروج ---------------- */
+$('#btn-logout').onclick = () => {
+  forgetCfg();
+  location.reload();
+};
+
+/* ---------------- شروع ---------------- */
+function esc(s){ const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
+
+let toastTimer = null;
+function toast(msg, kind){
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast ' + (kind||'');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 6000);
+}
+
+$('#btn-login').onclick = doLogin;
+$('#in-token').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+$('#apps-search').addEventListener('input', renderApps);
+$('#btn-add-app').onclick = () => openAppModal(null);
+$('#btn-batch-fetch').onclick = startBatch;
+
+(function init(){
+  show($('#view-setup'), true);
+  const cfg = loadCfg();
+  if(cfg.repo) $('#in-repo').value = cfg.repo;
+  if(cfg.repo && cfg.token){
+    $('#in-token').value = cfg.token;
+    $('#login-msg').textContent = 'توکن ذخیره‌شده پیدا شد — دکمه ورود را بزن.';
+  }
+})();
+</script>
+</body>
+</html>
