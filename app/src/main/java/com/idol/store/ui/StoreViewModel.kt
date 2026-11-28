@@ -225,7 +225,7 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
                     val releases = gh.stableReleases(repo)
                     if (releases.isEmpty()) throw StoreException(StoreErrorKind.NO_STABLE_RELEASE)
                     val latest = releases.first()
-                    val apk = GitHubService.pickUniversalApk(latest.assets)
+                    val apk = GitHubService.pickCompatibleApk(latest.assets)
                         ?: throw StoreException(StoreErrorKind.NO_UNIVERSAL_APK)
                     // ستاره و اطلاعات ریپو به‌موازات هم گرفته می‌شوند — نه پشت‌سرهم
                     val scope: Pair<Boolean?, com.idol.store.data.GhRepoInfo?> = coroutineScope {
