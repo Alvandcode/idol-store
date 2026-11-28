@@ -63,8 +63,21 @@ jobs:
           name: idol-store-apk
           path: app/build/outputs/apk/release/idolstore-*.apk
 
+      - name: Verify release APK
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          shopt -s nullglob
+          APK_FILES=(app/build/outputs/apk/release/idolstore-*.apk)
+          if [[ ${#APK_FILES[@]} -ne 1 ]]; then
+            echo "Expected exactly one release APK, found ${#APK_FILES[@]}."
+            exit 1
+          fi
+          test -s "${APK_FILES[0]}"
+          echo "Verified release APK: ${APK_FILES[0]}"
+
       - name: Attach APK to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/debug/idolstore-*.apk
+          files: app/build/outputs/apk/release/idolstore-*.apk
+          fail_on_unmatched_files: true
