@@ -95,6 +95,7 @@
   .status{font-size:11px; padding:2px 9px; border-radius:999px; border:1px solid var(--border); white-space:nowrap}
   .status.ok{color:var(--ok); border-color:#14432f}
   .status.dup{color:var(--warn); border-color:#4a3d12}
+  .status.noapk{color:var(--warn); border-color:#4a3d12}
   .status.err{color:var(--err); border-color:#5b2430}
   .status.wait{color:var(--muted)}
   .progress{height:5px; background:var(--bg2); border-radius:99px; overflow:hidden; margin-top:10px}
@@ -184,13 +185,15 @@
       <div class="card">
         <h2>ثبت گروهی پروژه‌ها</h2>
         <p class="muted">چند لینک پروژه (هر خط یک لینک — ریپو یا صفحه ریلیز گیت‌هاب) بده؛
-        پنل خودش نام، توضیح، سازنده، آیکون، آخرین ریلیز پایدار و حتی نام پکیج (از داخل APK) را
-        مطابق قالب فعلی کاتالوگ استخراج می‌کند. قبل از افزودن، همه را می‌توانی ویرایش کنی.</p>
+        پنل خودش نام، توضیح، سازنده، آیکون، آخرین ریلیز پایدار، نام پکیج (از داخل APK) و
+        <b>دسته‌بندی پیشنهادی</b> (از روی توضیح و تاپیک‌های خود ریپو) را استخراج می‌کند.
+        پروژه‌های بدون APK (دسکتاپ/CLI) با فیلتر «فقط اندرویدی» خودکار رد می‌شوند. قبل از افزودن، همه را می‌توانی ویرایش کنی.</p>
         <textarea id="batch-links" dir="ltr" style="min-height:100px"
           placeholder="https://github.com/owner/repo&#10;owner2/repo2"></textarea>
         <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <button id="btn-batch-fetch">دریافت خودکار اطلاعات</button>
           <label class="checkbox"><input type="checkbox" id="batch-update-dup" checked> به‌روزرسانی موارد تکراری</label>
+          <label class="checkbox"><input type="checkbox" id="batch-skip-noapk" checked> فقط اندرویدی (رد کردن بدون APK)</label>
           <span class="muted" id="batch-status"></span>
         </div>
         <div class="progress hidden" id="batch-progress"><div></div></div>
@@ -507,6 +510,31 @@ async function resolveIcon(rootEntries, info){
   return info.owner && info.owner.avatar_url || '';
 }
 
+/* ---------------- دسته‌بندی خودکار از روی شخصیت پروژه ----------------
+   بر اساس نام + توضیح + تاپیک‌های گیت‌هاب، دسته پیشنهادی انتخاب می‌شود.
+   اولویت: امنیت/شبکه > رسانه > ابزارها (چون کلمات ابزار مثل scanner در پروژه‌های
+   فیلترشکن هم می‌آید، قوانین امنیت اول چک می‌شوند). */
+const CAT_RULES = [
+  {cat:'امنیت و حریم خصوصی', re:/\b(vpn|proxy|firewall|security|privacy|encryption|anti.?censor|gfw|tor\b|orbot|wireguard|v2ray|xray|sing.?box|clash|hysteria|shadowsocks|tunnel|censorship|obfuscation|warp|amnezia|nekoray|nekobox|dns)\b|فیلترشکن|شکن|وی.?پی.?ان|امنیت|حریم خصوصی|ضدسانسور|تونل|رمزنگاری/i},
+  {cat:'رسانه', re:/\b(video|player|music|song|youtube|twitter|instagram|telegram|media|stream|podcast|movie|anime|manga|reader)\b|دانلود|ویدیو|موزیک|آهنگ|پخش|تلویزیون|فیلم|پادکست|خبر|اخبار/i},
+  {cat:'ابزارها', re:/\b(tool|utils|manager|downloader|scanner|launcher|browser|keyboard|cleaner|editor|pdf|note|todo|calendar|weather|file|backup|store|chat|messenger)\b|ابزار|مدیریت|جستجو|فایل|یادداشت|تقویم|هوا|مرورگر|چت|پیام/i},
+];
+function guessCategory(info, categories){
+  const text = [info.name || '', info.description || '', (info.topics || []).join(' ')].join(' ');
+  if(!text.trim()) return '';
+  for(const rule of CAT_RULES){
+    if(rule.re.test(text)){
+      // اگر چنین دسته‌ای در کاتالوگ موجود است از همان استفاده کن
+      const exists = categories.find(c => c === rule.cat);
+      if(exists) return exists;
+      // وگرنه نزدیک‌ترین دسته موجود که کلیدواژه‌ای از اسمش در متن هست
+      const near = categories.find(c => c && text.includes(c));
+      return near || rule.cat;
+    }
+  }
+  return '';
+}
+
 /* ---------------- دریافت کامل اطلاعات یک پروژه ---------------- */
 async function fetchRepoData(rawLink){
   const repo = repoFromUrl(rawLink);
@@ -539,7 +567,7 @@ async function fetchRepoData(rawLink){
     id: repo.split('/')[1].toLowerCase(),
     name: base,
     developer: (info.owner && info.owner.login) || repo.split('/')[0],
-    category: '',
+    category: guessCategory(info, S.catalog.categories),
     description: info.description || '',
     iconUrl: icon,
     packageName: pkg || '',
@@ -792,7 +820,7 @@ function openAppModal(existing){
     try{
       const f = await fetchRepoData(link);
       // فقط فیلدهای خالی را پر کن تا کار دستی از بین نرود
-      ['name','developer','description','iconUrl','packageName','website','id'].forEach(k => {
+      ['name','developer','category','description','iconUrl','packageName','website','id'].forEach(k => {
         if(!g('m-' + k).value.trim() && f[k]) g('m-' + k).value = f[k];
       });
       if(!g('m-github').value.trim()) g('m-github').value = f.github;
@@ -825,14 +853,14 @@ function renderBatch(){
   const box = $('#batch-results');
   box.innerHTML = '';
   $('#batch-actions').innerHTML = '';
-  const ok = S.batchRows.filter(r => r.status === 'ok' || r.status === 'dup');
+  const ok = addableRows();
   if(ok.length){
     const btn = document.createElement('button');
     btn.textContent = `افزودن ${ok.length} اپ به لیست استور`;
     btn.onclick = () => {
       const upd = $('#batch-update-dup').checked;
       let added = 0, updated = 0;
-      ok.forEach(r => {
+      addableRows().forEach(r => {
         const clean = appObj(r.data);
         const existing = findExisting(S.catalog.apps, r.data);
         if(existing){ if(upd){ S.catalog.apps[S.catalog.apps.indexOf(existing)] = {...existing, ...clean}; updated++; } }
@@ -868,13 +896,15 @@ function renderBatch(){
       return;
     }
     const d = r.data;
-    const dupLabel = r.status === 'dup' ? (r.added ? 'به‌روزرسانی شد' : 'تکراری — به‌روزرسانی می‌شود') : 'دریافت شد';
+    const dupLabel = r.status === 'dup' ? (r.added ? 'به‌روزرسانی شد' : 'تکراری — به‌روزرسانی می‌شود')
+      : r.status === 'noapk' ? 'بدون APK — رد شد (غیر اندرویدی)'
+      : 'دریافت شد';
     div.innerHTML = `<div class="head">
         <img src="${escAttr(d.iconUrl||'')}" loading="lazy" alt="" onerror="this.style.visibility='hidden'">
         <div><div style="font-weight:700">${esc(d.name)}</div>
         <div class="gh">${esc(d.github)}</div></div>
         <div style="flex:1"></div>
-        <span class="status ${r.status}">${dupLabel}</span>
+        <span class="status ${r.status === 'noapk' ? 'noapk' : r.status}">${dupLabel}</span>
         ${d._latestTag ? `<span class="status wait">آخرین ریلیز: ${esc(d._latestTag)}</span>` : '<span class="status wait">بدون ریلیز پایدار</span>'}
         ${d._stars != null ? `<span class="status wait">★ ${d._stars}</span>` : ''}
         <button class="danger sm">حذف</button>
@@ -902,11 +932,22 @@ async function runBatchRow(r){
   renderBatch();
   try{
     r.data = await fetchRepoData(r.link);
-    r.status = findExisting(S.catalog.apps, r.data) ? 'dup' : 'ok';
+    if($('#batch-skip-noapk').checked && !r.data._apk){
+      // هیچ APK در آخرین ریلیز پایدار نیست → دسکتاپ/CLI/پنل، قابل استفاده در استور نیست
+      r.status = 'noapk';
+    } else {
+      r.status = findExisting(S.catalog.apps, r.data) ? 'dup' : 'ok';
+    }
   }catch(e){
     r.status = 'err'; r.error = e.message;
   }
   renderBatch();
+}
+
+function addableRows(){
+  const skip = $('#batch-skip-noapk').checked;
+  return S.batchRows.filter(r => r.status === 'ok' || r.status === 'dup'
+    || (r.status === 'noapk' && !skip));
 }
 
 async function startBatch(){
@@ -1151,6 +1192,7 @@ $('#in-token').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(
 $('#apps-search').addEventListener('input', renderApps);
 $('#btn-add-app').onclick = () => openAppModal(null);
 $('#btn-batch-fetch').onclick = startBatch;
+$('#batch-skip-noapk').addEventListener('change', renderBatch);
 
 (function init(){
   show($('#view-setup'), true);
