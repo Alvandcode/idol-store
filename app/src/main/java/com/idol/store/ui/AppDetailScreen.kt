@@ -370,7 +370,7 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                         SectionTitle(stringResource(R.string.detail_older_releases))
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             older.forEach { release ->
-                                val apk = GitHubService.pickUniversalApk(release.assets)
+                                val apk = GitHubService.pickCompatibleApk(release.assets)
                                 if (apk != null) {
                                     ReleaseCard(
                                         release = release,
