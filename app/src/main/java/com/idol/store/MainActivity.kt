@@ -135,7 +135,11 @@ fun StoreApp(
                 "terms" -> TermsScreen(onBack = { legalPage = null })
                 else -> AboutScreen(onBack = { legalPage = null })
             }
-            is Screen.Admin -> AdminScreen(onBack = { vm.adminMode = false; vm.refresh() })
+            is Screen.Admin -> AdminScreen(
+                onBack = { vm.adminMode = false; vm.refresh() },
+                // ویرایش از هر صفحه: اگر مالک از صفحه اپ «ویرایش» زده باشد، ادیتور همان پروژه باز می‌شود
+                openEditorFor = vm.consumeManageRequest(),
+            )
             is Screen.Detail -> AppDetailScreen(vm = vm, app = scr.app, onBack = { vm.selectedApp = null })
             is Screen.Category -> CategoryAppsScreen(vm = vm, key = scr.key, onBack = { vm.openCategory = null })
             Screen.Tabs -> StoreTabs(vm, onLogout = onLogout, onOpenLegal = { legalPage = it })

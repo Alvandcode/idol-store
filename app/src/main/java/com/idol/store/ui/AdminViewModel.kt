@@ -116,6 +116,12 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
                 } catch (_: Exception) {
                     null // ریپو هنوز ریلیز ندارد؛ بقیه اطلاعات را می‌گیریم
                 }
+                // تشخیص خودکار: پروژه بدون APK یونیورسال → اخطار و اضافه نشدن
+                val universalApk = latest?.assets?.let { GitHubService.pickUniversalApk(it) }
+                if (universalApk == null) {
+                    fetchError = ctx.getString(R.string.form_err_no_apk)
+                    return@launch
+                }
                 fetchedApp = StoreApp(
                     id = repo.substringAfter('/').lowercase(),
                     name = info.name ?: repo.substringAfter('/'),
@@ -395,8 +401,32 @@ class AdminViewModel(application: Application) : AndroidViewModel(application) {
         clearLatestTag()
     }
 
-    /** ذخیره اپ در لیست محلی (هنوز منتشر نشده) */
+    /** ذخیره اپ در لیست محلی (هنوز منتشر نشده) — اپ جدید اول برای APK بررسی می‌شود */
     fun upsertApp(app: StoreApp) {
+        val ctx = getApplication<Application>()
+        val isNew = apps.indexOfFirst { it.id == app.id } < 0
+        if (!isNew) {
+            doUpsert(app)
+            return
+        }
+        // تشخیص خودکار هنگام افزودن: بدون APK یونیورسال اضافه نمی‌شود
+        viewModelScope.launch {
+            try {
+                val repo = GitHubService.repoFromUrl(app.github)
+                val releases = repo?.let { gh.stableReleases(it) }.orEmpty()
+                val apk = releases.firstOrNull()?.assets?.let { GitHubService.pickUniversalApk(it) }
+                if (apk == null) {
+                    message = ctx.getString(R.string.form_err_no_apk)
+                } else {
+                    doUpsert(app)
+                }
+            } catch (e: Exception) {
+                message = ctx.getString(R.string.form_err_no_apk) + " (" + AppErrors.message(ctx, e) + ")"
+            }
+        }
+    }
+
+    private fun doUpsert(app: StoreApp) {
         val ctx = getApplication<Application>()
         val existingIndex = apps.indexOfFirst { it.id == app.id }
         apps = if (existingIndex >= 0) {

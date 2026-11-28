@@ -47,6 +47,12 @@
     <string name="tab_you">You</string>
 
     <string name="all_chip">All</string>
+    <string name="form_err_no_apk">This project has no universal APK in its stable release; it was not added.</string>
+    <string name="detail_manage_edit">Edit</string>
+    <string name="detail_manage_delete">Delete</string>
+    <string name="detail_delete_title">Delete project</string>
+    <string name="detail_delete_confirm_fmt">Remove “%1$s” from the store? This commits directly to GitHub.</string>
+    <string name="detail_delete_yes">Yes, delete</string>
     <string name="popular_section">Most popular</string>
     <string name="recent_updates">Recent updates</string>
     <string name="other_apps">Other apps</string>

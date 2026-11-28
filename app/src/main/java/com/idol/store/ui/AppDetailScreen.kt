@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -38,6 +40,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,6 +48,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -82,6 +86,40 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
     val states by vm.downloadStates.collectAsState()
     val contentMap by vm.content.collectAsState()
     val state = contentMap[app.id] ?: AppContentState.Loading
+    var showDeleteConfirm by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
+    // تأیید حذف پروژه از کاتالوگ (سازنده از هر صفحه‌ای)
+    if (showDeleteConfirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text(stringResource(R.string.detail_delete_title)) },
+            text = { Text(stringResource(R.string.detail_delete_confirm_fmt, app.name)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    vm.deleteFromCatalog(app)
+                }) {
+                    Text(stringResource(R.string.detail_delete_yes), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(stringResource(R.string.back))
+                }
+            },
+        )
+    }
+    // پیام خطای حذف/کامیت کاتالوگ
+    vm.catalogError?.let { err ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { vm.clearCatalogError() },
+            title = { Text(stringResource(R.string.detail_delete_title)) },
+            text = { Text(err) },
+            confirmButton = {
+                TextButton(onClick = { vm.clearCatalogError() }) { Text(stringResource(R.string.back)) }
+            },
+        )
+    }
     // با برگشت از نصب سیستم، وضعیت نصب دوباره محاسبه می‌شود
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
@@ -209,6 +247,34 @@ fun AppDetailScreen(vm: StoreViewModel, app: StoreApp, onBack: () -> Unit) {
                                     else
                                         MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                            }
+                        }
+
+                        // مدیریت از هر صفحه: سازنده/ادمینِ manage_apps می‌تواند ویرایش و حذف کند
+                        if (vm.isAdmin) {
+                            Spacer(Modifier.height(10.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedButton(
+                                    onClick = { vm.requestEditFromAnywhere(app) },
+                                    enabled = !vm.catalogSaving,
+                                ) {
+                                    Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(stringResource(R.string.detail_manage_edit))
+                                }
+                                Spacer(Modifier.width(10.dp))
+                                OutlinedButton(
+                                    onClick = { showDeleteConfirm = true },
+                                    enabled = !vm.catalogSaving,
+                                ) {
+                                    Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(stringResource(R.string.detail_manage_delete), color = MaterialTheme.colorScheme.error)
+                                }
+                                if (vm.catalogSaving) {
+                                    Spacer(Modifier.width(10.dp))
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                }
                             }
                         }
                     }

@@ -47,27 +47,30 @@ android {
         buildConfigField("String", "REG_SECRET", "\"580a81cdb31d62ab055f2982d570c499fefb6927830df851\"")
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-        }
-    }
-
     // لایسنس ثابت: هر دو بیلد debug و release با کلید ثابت (از env در CI یا فایل local) امضا
     // می‌شوند تا آپدیت‌ها بدون حذفِ نسخه قبلی، مستقیم نصب شوند.
     signingConfigs {
         create("idol") {
             val ks = System.getenv("IDOL_KEYSTORE")
                 ?: rootProject.file("signing/idol-store.keystore").takeIf { it.exists() }?.absolutePath
+            // پسورد: اول env (برای CI)، وگرنه مستقیم از فایل محلی signing/ (gitignore شده) —
+            // تا در بیلد محلی نیازی به عبور رمز از محیط شل نباشد.
             val pass = System.getenv("IDOL_KEYSTORE_PASSWORD")
+                ?: rootProject.file("signing/password.txt").takeIf { it.exists() }?.readText()?.trim()
             if (ks != null && !pass.isNullOrEmpty()) {
                 storeFile = file(ks)
                 storePassword = pass
-                keyAlias = System.getenv("IDOL_KEY_ALIAS") ?: "idol-store"
+                keyAlias = System.getenv("IDOL_KEY_ALIAS")
+                    ?: rootProject.file("signing/alias.txt").takeIf { it.exists() }?.readText()?.trim()
+                    ?: "idol-store"
                 keyPassword = System.getenv("IDOL_KEY_PASSWORD") ?: pass
             }
         }
+    }
+
+    lint {
+        // lintVital در ریلیز به دانلود jarهای گوگل نیاز دارد؛ در شبکه محدود ممکن نیست
+        checkReleaseBuilds = false
     }
 
     buildTypes {
@@ -77,7 +80,9 @@ android {
             }
         }
         release {
-            isMinifyEnabled = false
+            // فشرده‌سازی R8 + حذف منابع بلااستفاده → حجم APK تقریباً نصف می‌شود
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (signingConfigs.getByName("idol").storeFile != null) {
                 signingConfig = signingConfigs.getByName("idol")

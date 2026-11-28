@@ -401,7 +401,8 @@ private fun HomeTab(
             }
 
             when {
-                vm.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                // اسپینر تمام‌صفحه فقط در بارگذاری اول — در رفرش، لیست قبلی دیده می‌شود
+                vm.loading && contentMap.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
 

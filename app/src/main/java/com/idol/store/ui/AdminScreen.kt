@@ -72,8 +72,13 @@ import com.idol.store.data.StoreApp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminScreen(onBack: () -> Unit) {
+fun AdminScreen(onBack: () -> Unit, openEditorFor: com.idol.store.data.StoreApp? = null) {
     val vm: AdminViewModel = viewModel()
+
+    // ویرایش درخواست‌شده از صفحه اپ — ادیتور همان پروژه باز می‌شود
+    androidx.compose.runtime.LaunchedEffect(openEditorFor) {
+        if (openEditorFor != null) vm.openEditor(openEditorFor)
+    }
 
     Scaffold(
     ) { padding ->

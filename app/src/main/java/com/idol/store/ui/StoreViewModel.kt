@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.idol.store.BuildConfig
+import com.idol.store.R
 import com.idol.store.data.AdminAccess
 import com.idol.store.data.ApkDownloader
 import com.idol.store.data.AuthManager
@@ -18,6 +19,7 @@ import com.idol.store.data.GhAsset
 import com.idol.store.data.GhRelease
 import com.idol.store.data.GitHubService
 import com.idol.store.data.InstalledPkgMap
+import kotlinx.serialization.encodeToString
 import com.idol.store.data.Installer
 import com.idol.store.data.SecurityGateStatus
 import com.idol.store.data.SecurityRepository
@@ -31,6 +33,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.io.File
@@ -76,6 +80,65 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
     var adminMode by mutableStateOf(false)
     var isAdmin by mutableStateOf(false)
         private set
+
+    /** پروژه‌ای که سازنده از هر صفحه‌ای برای ویرایش انتخاب کرده — مصرف در صفحه پنل */
+    var manageRequest by mutableStateOf<com.idol.store.data.StoreApp?>(null)
+        private set
+
+    /** خواندن و پاک کردن درخواست ویرایش (یک‌بار مصرف) */
+    fun consumeManageRequest(): com.idol.store.data.StoreApp? {
+        val r = manageRequest
+        manageRequest = null
+        return r
+    }
+
+    /** ویرایش از هر صفحه: پنل مدیریت با ادیتور همان پروژه باز می‌شود */
+    fun requestEditFromAnywhere(app: com.idol.store.data.StoreApp) {
+        if (!isAdmin) return
+        manageRequest = app
+        selectedApp = null
+        openCategory = null
+        adminMode = true
+    }
+
+    /** حذف مستقیم پروژه از کاتالوگ (سازنده/ادمین manage_apps، از هر صفحه‌ای) */
+    var catalogSaving by mutableStateOf(false)
+        private set
+
+    fun deleteFromCatalog(app: com.idol.store.data.StoreApp, onDone: () -> Unit = {}) {
+        val ctx = getApplication<Application>()
+        val cat = catalog ?: return
+        if (!isAdmin || catalogSaving) return
+        viewModelScope.launch {
+            catalogSaving = true
+            try {
+                val updated = cat.copy(apps = cat.apps.filterNot { it.id == app.id })
+                val json = kotlinx.serialization.json.Json {
+                    prettyPrint = true
+                    ignoreUnknownKeys = true
+                }.encodeToString(com.idol.store.data.Catalog.serializer(), updated)
+                GitHubService.commitCatalogFile(
+                    repo = BuildConfig.CATALOG_REPO,
+                    path = BuildConfig.CATALOG_PATH,
+                    message = ctx.getString(R.string.admin_commit_msg, currentLogin ?: "owner"),
+                    content = json,
+                    token = AuthManager.token(ctx) ?: "",
+                )
+                selectedApp = null
+                refresh()
+            } catch (e: Exception) {
+                catalogError = AppErrors.message(ctx, e)
+            } finally {
+                catalogSaving = false
+                onDone()
+            }
+        }
+    }
+
+    var catalogError by mutableStateOf<String?>(null)
+        private set
+
+    fun clearCatalogError() { catalogError = null }
     var currentLogin by mutableStateOf<String?>(null)
         private set
 
@@ -133,10 +196,18 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** برای هر اپ، آخرین ریلیز پایدار + APK یونیورسال + وضعیت ستاره را می‌گیرد */
+    /**
+     * stale-while-revalidate: داده‌های آماده حفظ می‌شوند و فقط نبودها Loading می‌گیرند —
+     * نتیجه: برگشت به استور فوری است و رفرش صفحه را سفید/اسپینر نمی‌کند.
+     */
     private fun loadReleases() {
         val apps = catalog?.apps.orEmpty()
-        _content.value = apps.associate { it.id to AppContentState.Loading as AppContentState }
+        _content.update { cur ->
+            apps.associate { app ->
+                val existing = cur[app.id]
+                app.id to (if (existing is AppContentState.Ready) existing else AppContentState.Loading as AppContentState)
+            }
+        }
         apps.forEach { app -> fetchApp(app) }
     }
 
@@ -156,10 +227,14 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
                     val latest = releases.first()
                     val apk = GitHubService.pickUniversalApk(latest.assets)
                         ?: throw StoreException(StoreErrorKind.NO_UNIVERSAL_APK)
-                    val starred = try { gh.isStarred(repo) } catch (_: Exception) { null }
-                    val repoInfo = try { gh.repoDetails(repo) } catch (_: Exception) { null }
+                    // ستاره و اطلاعات ریپو به‌موازات هم گرفته می‌شوند — نه پشت‌سرهم
+                    val scope: Pair<Boolean?, com.idol.store.data.GhRepoInfo?> = coroutineScope {
+                        val starredD = async { try { gh.isStarred(repo) } catch (_: Exception) { null } }
+                        val infoD = async { try { gh.repoDetails(repo) } catch (_: Exception) { null } }
+                        Pair(starredD.await(), infoD.await())
+                    }
                     _content.update {
-                        it + (app.id to AppContentState.Ready(repo, releases, apk, starred, repoInfo))
+                        it + (app.id to AppContentState.Ready(repo, releases, apk, scope.first, scope.second))
                     }
                 } catch (e: Exception) {
                     _content.update {
@@ -257,15 +332,31 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * کش اسکن پکیج‌های نصب‌شده — سنگین‌ترین کار (getInstalledPackages) فقط یک‌بار در هر تیک
+     * اجرا می‌شود، نه در هر بار ترسیم هر ردیف. این، لگ اسکرول را از بین می‌برد.
+     */
+    private var pkgSnapshotTick = -1
+    private var pkgSnapshot: Map<String, String?> = emptyMap() // lowercase pkg → versionName
+
+    private fun installedPackagesSnapshot(): Map<String, String?> {
+        if (pkgSnapshotTick != installTick) {
+            pkgSnapshotTick = installTick
+            pkgSnapshot = try {
+                getApplication<Application>().packageManager
+                    .getInstalledPackages(0)
+                    .associate { it.packageName.lowercase() to it.versionName }
+            } catch (_: Exception) {
+                emptyMap()
+            }
+        }
+        return pkgSnapshot
+    }
+
     /** versionName نصب‌شده برای مقایسه دقیق با تگ ریلیز */
     fun installedVersionName(packageName: String?): String? {
         if (packageName.isNullOrBlank()) return null
-        return try {
-            getApplication<Application>().packageManager
-                .getPackageInfo(packageName, 0).versionName
-        } catch (_: PackageManager.NameNotFoundException) {
-            null
-        }
+        return installedPackagesSnapshot()[packageName.lowercase()]
     }
 
     /**
@@ -276,24 +367,16 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun installedVersionName(app: com.idol.store.data.StoreApp?): String? {
         if (app == null) return null
+        val map = installedPackagesSnapshot()
         val candidates = listOfNotNull(
             InstalledPkgMap.get(getApplication(), app.id),
             app.packageName?.takeIf { it.isNotBlank() },
             app.id.takeIf { it.isNotBlank() },
         ).filter { it.isNotBlank() }.distinct()
         candidates.forEach { pkg ->
-            installedVersionName(pkg)?.let { return it }
+            map[pkg.lowercase()]?.let { return it }
         }
-        // اسکن بی‌حساسیت: پکیجی که نامش (بدون حساسیت حروف) با یکی از نامزدها یکی است
-        return try {
-            val pm = getApplication<Application>().packageManager
-            val installed = pm.getInstalledPackages(0)
-            installed.firstOrNull { info ->
-                candidates.any { it.equals(info.packageName, ignoreCase = true) }
-            }?.versionName
-        } catch (_: Exception) {
-            null
-        }
+        return null
     }
 
     /** با هر برگشت به اپ (مثلاً بعد از پایان نصب سیستم) وضعیت نصب دوباره چک می‌شود */

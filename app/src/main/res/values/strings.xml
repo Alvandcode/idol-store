@@ -48,6 +48,12 @@
     <string name="tab_you">شما</string>
 
     <string name="all_chip">همه</string>
+    <string name="form_err_no_apk">این پروژه فایل APK یونیورسال در ریلیز پایدار ندارد؛ اضافه نشد.</string>
+    <string name="detail_manage_edit">ویرایش</string>
+    <string name="detail_manage_delete">حذف</string>
+    <string name="detail_delete_title">حذف پروژه</string>
+    <string name="detail_delete_confirm_fmt">«%1$s» از استور حذف شود؟ این تغییر مستقیم در گیت‌هاب ثبت می‌شود.</string>
+    <string name="detail_delete_yes">بله، حذف کن</string>
     <string name="popular_section">محبوب‌ترین‌ها</string>
     <string name="recent_updates">بروزرسانی‌های اخیر</string>
     <string name="other_apps">سایر برنامه‌ها</string>
