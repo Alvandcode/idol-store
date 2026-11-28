@@ -222,8 +222,13 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
                 try {
                     val repo = GitHubService.repoFromUrl(app.github)
                         ?: throw StoreException(StoreErrorKind.INVALID_REPO_URL, app.github)
-                    val releases = gh.stableReleases(repo)
-                    if (releases.isEmpty()) throw StoreException(StoreErrorKind.NO_STABLE_RELEASE)
+                    val allReleases = gh.stableReleases(repo)
+                    if (allReleases.isEmpty()) throw StoreException(StoreErrorKind.NO_STABLE_RELEASE)
+                    // ریلیزهایی که APK قابل نصب روی معماری این دستگاه ندارند، برای این کاربر کنار گذاشته می‌شوند.
+                    val releases = allReleases.filter {
+                        GitHubService.pickCompatibleApk(it.assets) != null
+                    }
+                    if (releases.isEmpty()) throw StoreException(StoreErrorKind.NO_UNIVERSAL_APK)
                     val latest = releases.first()
                     val apk = GitHubService.pickCompatibleApk(latest.assets)
                         ?: throw StoreException(StoreErrorKind.NO_UNIVERSAL_APK)
